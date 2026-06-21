@@ -7,10 +7,11 @@ service cloud.firestore {
     // 가족 계정 이메일을 모두 소문자로 추가하세요.
     function isFamily() {
       return request.auth != null && request.auth.token.email in [
-        'farmtourai@gmail.com'
-        // , 'mom@example.com'
-        // , 'dad@example.com'
-        // , 'child1@example.com'
+        'farmtourai@gmail.com',   // 관리자(부모)
+        'moakboy@naver.com',      // 큰아들
+        'moakangel@naver.com',    // 딸
+        'moakman@naver.com',      // 둘째아들
+        'moakking@naver.com'      // 막내아들
       ];
     }
 
