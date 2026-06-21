@@ -1313,14 +1313,6 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <span class="sidebar-item-icon">📖</span>
     <span class="sidebar-item-label">가족 스토리</span>
   </button>
-  <button class="sidebar-item" onclick="showPage('roulette')" data-page="roulette">
-    <span class="sidebar-item-icon">🎰</span>
-    <span class="sidebar-item-label">가족 룰렛</span>
-  </button>
-  <button class="sidebar-item" onclick="showPage('mission')" data-page="mission">
-    <span class="sidebar-item-icon">🎯</span>
-    <span class="sidebar-item-label">오늘의 미션</span>
-  </button>
   <button class="sidebar-item" onclick="showPage('cheer')" data-page="cheer">
     <span class="sidebar-item-icon">💌</span>
     <span class="sidebar-item-label">칭찬 릴레이</span>
@@ -1332,6 +1324,14 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <button class="sidebar-item" onclick="showPage('diary')" data-page="diary">
     <span class="sidebar-item-icon">📓</span>
     <span class="sidebar-item-label">일상 기록</span>
+  </button>
+  <button class="sidebar-item" onclick="showPage('mission')" data-page="mission">
+    <span class="sidebar-item-icon">🎯</span>
+    <span class="sidebar-item-label">오늘의 미션</span>
+  </button>
+  <button class="sidebar-item" onclick="showPage('roulette')" data-page="roulette">
+    <span class="sidebar-item-icon">🎰</span>
+    <span class="sidebar-item-label">가족 룰렛</span>
   </button>
 </div>
 
@@ -1462,7 +1462,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
         <select id="cheer-to">
           <option value="">받는 사람 선택</option>
         </select>
-        <input type="text" id="cheer-from" placeholder="보내는 사람 (익명 가능)" maxlength="10"/>
+        <select id="cheer-from"><option value="익명">보내는 사람 (익명)</option></select>
       </div>
       <div class="cheer-emoji-row" id="cheer-emoji-row">
         <button class="cheer-emoji-btn active" onclick="selectCheerEmoji(this,'💖')">💖</button>
@@ -2347,15 +2347,20 @@ function renderMembersGrid(){
 
 // ── 사진첩 (인스타 스타일) ──
 // ── 사진첩: 가족별 폴더 + IndexedDB ──
-let _galleryFolder='family';
+let _galleryFolder='parents';
 // 사진첩은 동기화 상태 d.gallery=[{id,folder,url,path,name,date}] 에 저장 → 모든 기기 공유
 function getGallery(){ const d=getS(); return d.gallery||[]; }
 function setGallery(arr){ const d=getS(); d.gallery=arr; setS(d); }
 function getGalleryFolders(){
-  const members=getMembers();
-  const folders=[{id:'family', label:'👨‍👩‍👧‍👦 가족 전체'}];
-  members.forEach(m=>{ if(m.id!=='dad'&&m.id!=='mom') folders.push({id:m.id, label:`${m.emoji} ${m.name}`}); });
-  return folders;
+  const m=getMembers();
+  const find=id=>m.find(x=>x.id===id)||{};
+  return [
+    {id:'parents',  label:`${find('dad').emoji||'👨'}${find('mom').emoji||'👩'} 부모`},
+    {id:'son1',     label:`${find('son1').emoji||'⛳'} 큰아들`},
+    {id:'daughter', label:`${find('daughter').emoji||'🎂'} 딸`},
+    {id:'son2',     label:`${find('son2').emoji||'🤖'} 작은아들`},
+    {id:'son3',     label:`${find('son3').emoji||'🧮'} 막내아들`},
+  ];
 }
 function renderGalleryFolders(){
   const el=document.getElementById('gallery-folders');
@@ -2370,6 +2375,7 @@ function selectGalleryFolder(id){ _galleryFolder=id; renderGalleryFolders(); ren
 function renderGallery(){
   const gg=document.getElementById('gallery-grid');
   if(!gg) return;
+  renderGalleryFolders();   // 폴더 탭도 함께 렌더 (부모/큰아들/딸/작은아들/막내아들)
   gg.innerHTML='';
   const photos=getGallery().filter(p=>p.folder===_galleryFolder);
   photos.forEach(p=>{
@@ -3305,7 +3311,9 @@ function renderCheerBoards(){
   const members = getMembers();
   const msgs = getCheerMsgs();
   const sel = document.getElementById('cheer-to');
-  if(sel){ sel.innerHTML='<option value="">받는 사람 선택</option>'+members.map(m=>`<option value="${m.id}">${m.emoji} ${m.name}</option>`).join(''); }
+  if(sel){ const cur=sel.value; sel.innerHTML='<option value="">받는 사람 선택</option>'+members.map(m=>`<option value="${m.id}">${m.emoji} ${m.name}</option>`).join(''); if(cur) sel.value=cur; }
+  const selFrom = document.getElementById('cheer-from');
+  if(selFrom){ const cur=selFrom.value; selFrom.innerHTML='<option value="익명">보내는 사람 (익명)</option>'+members.map(m=>`<option value="${m.name}">${m.emoji} ${m.name}</option>`).join(''); if(cur) selFrom.value=cur; }
   const el = document.getElementById('cheer-boards');
   if(!el) return;
   const canEdit = isAdmin || isMember;   // 로그인 회원·관리자만 수정/삭제
@@ -3351,7 +3359,7 @@ function selectCheerEmoji(btn,emoji){
 
 function sendCheer(){
   const to   = document.getElementById('cheer-to').value;
-  const from = document.getElementById('cheer-from').value.trim()||'익명';
+  const from = document.getElementById('cheer-from').value||'익명';
   const text = document.getElementById('cheer-msg').value.trim();
   if(!to){ alert('받는 사람을 선택해주세요!'); return; }
   if(!text){ alert('메시지를 입력해주세요!'); return; }
@@ -3360,7 +3368,7 @@ function sendCheer(){
   msgs[to].push({emoji:cheerEmoji, text, from, date:new Date().toLocaleDateString('ko-KR')});
   setCheerMsgs(msgs);
   document.getElementById('cheer-msg').value='';
-  document.getElementById('cheer-from').value='';
+  document.getElementById('cheer-from').selectedIndex=0;
   renderCheerBoards();
   const member = getMembers().find(m=>m.id===to);
   showCheerToast(`${member?.emoji||''} ${member?.name||''}에게 칭찬을 보냈어요! 💌`);
