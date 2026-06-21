@@ -9,6 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap');
 
@@ -1629,6 +1630,32 @@ const auth = firebase.auth();
 // 로그인 상태 유지 (탭/브라우저를 닫아도 유지)
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
 
+// ── Storage (사진 업로드) ──
+const storage = firebase.storage();
+// 압축된 dataURL을 Storage에 업로드하고 다운로드 URL 반환
+async function uploadPhoto(dataUrl, pathPrefix){
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const path = pathPrefix + '/' + id + '.jpg';
+  const ref = storage.ref().child(path);
+  await ref.putString(dataUrl, 'data_url');
+  const url = await ref.getDownloadURL();
+  return { id, url, path };
+}
+// Storage 경로의 사진 삭제 (실패해도 무시 — URL만 지워도 화면에선 사라짐)
+function deletePhotoFile(path){
+  if(!path) return Promise.resolve();
+  return storage.ref().child(path).delete().catch(()=>{});
+}
+// 파일 → 압축 dataURL
+function fileToCompressedDataUrl(file, maxDim=1600, quality=0.85){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=ev=>compressImage(ev.target.result, maxDim, quality).then(resolve).catch(reject);
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 // ── Firestore 실시간 동기화 (가족 간 데이터 공유) ──
 const db = firebase.firestore();
 const SHARED_DOC = db.collection('shared').doc('main');
@@ -2069,27 +2096,9 @@ function galleryDBSet(key,val){ return homeDBOpen().then(db=>new Promise((res,re
 function galleryDBDel(key){ return homeDBOpen().then(db=>new Promise((res,rej)=>{const tx=db.transaction('gallery','readwrite');tx.objectStore('gallery').delete(String(key));tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);})); }
 function galleryDBAll(){ return homeDBOpen().then(db=>new Promise((res,rej)=>{const out=[];const tx=db.transaction('gallery','readonly');const c=tx.objectStore('gallery').openCursor();c.onsuccess=e=>{const cur=e.target.result;if(cur){out.push(cur.value);cur.continue();}else res(out);};c.onerror=()=>rej(c.error);})); }
 
-let _homePhotoCache=null;      // {idx: dataURL}
-let _homePhotosLoaded=false;
-let _homeLoading=false;
-function getHomePhotos(){ return _homePhotoCache||{}; }
-
-async function loadHomePhotos(){
-  if(_homeLoading) return; _homeLoading=true;
-  // 기존 localStorage 사진을 IndexedDB로 1회 이전
-  const d=getS();
-  if(d.homePhotos && Object.keys(d.homePhotos).length){
-    try{
-      for(const k in d.homePhotos){ await homeDBSet(k, d.homePhotos[k]); }
-      delete d.homePhotos; setS(d);   // localStorage 공간 확보
-    }catch(_){}
-  }
-  try{ _homePhotoCache=await homeDBAll(); }
-  catch(_){ _homePhotoCache={}; }
-  _homePhotosLoaded=true;
-  _homeLoading=false;
-  renderHomeBoard();
-}
+// 홈 보드 사진은 동기화 상태에 {idx:{url,path}} 형태로 저장 → 모든 기기에서 공유
+function getHomePhotos(){ const d=getS(); return d.homePhotos||{}; }
+function setHomePhotos(map){ const d=getS(); d.homePhotos=map; setS(d); }
 
 const HOME_GRID = {
   1:{cols:'1fr',           rows:'1fr'},
@@ -2101,7 +2110,6 @@ const HOME_GRID = {
 function renderHomeBoard(){
   const board=document.getElementById('home-photo-board');
   if(!board) return;
-  if(!_homePhotosLoaded){ loadHomePhotos(); }   // 첫 호출 시 IDB에서 로드
   const n=getHomeSplit();
   const g=HOME_GRID[n]||HOME_GRID[2];
   board.style.gridTemplateColumns=g.cols;
@@ -2111,12 +2119,12 @@ function renderHomeBoard(){
   // 관리자: 드래그로 위치 변경 가능
   let html='';
   for(let i=0;i<n;i++){
-    const img=photos[i];
+    const ph=photos[i];
     const drop = isAdmin ? ` ondragover="homeDragOver(event,${i})" ondrop="homeDrop(event,${i})" ondragleave="homeDragLeave(event)"` : '';
-    if(img){
+    if(ph && ph.url){
       const drag = isAdmin ? ` draggable="true" ondragstart="homeDragStart(event,${i})" ondragend="homeDragEnd(event)"` : '';
       html+=`<div class="home-photo-tile filled"${drag}${drop} data-idx="${i}">
-        <img src="${img}" alt="가족 사진 ${i+1}" draggable="false"/>
+        <img src="${ph.url}" alt="가족 사진 ${i+1}" draggable="false"/>
         ${isAdmin?'<div class="home-drag-badge">⇕ 드래그</div>':''}
         <button class="home-photo-del" onclick="deleteHomePhoto(${i})" title="삭제">✕</button>
       </div>`;
@@ -2154,32 +2162,30 @@ function compressImage(dataUrl, maxDim, quality){
     img.src=dataUrl;
   });
 }
-function onHomePhotoSelected(e){
+async function onHomePhotoSelected(e){
   const file=e.target.files&&e.target.files[0];
   if(file==null||_homeUploadIdx==null) return;
   const idx=_homeUploadIdx; _homeUploadIdx=null;
-  const reader=new FileReader();
-  reader.onload=async ev=>{
-    let out;
-    try{ out=await compressImage(ev.target.result, 1600, 0.85); }
-    catch(_){ alert('이미지를 읽을 수 없어요. 다른 사진을 시도해주세요. 🙏'); return; }
-    try{
-      await homeDBSet(idx, out);
-      if(!_homePhotoCache) _homePhotoCache={};
-      _homePhotoCache[idx]=out;
-      renderHomeBoard();
-    }catch(err){
-      alert('사진 저장에 실패했어요. 잠시 후 다시 시도해주세요. 🙏');
-    }
-  };
-  reader.readAsDataURL(file);
+  let out;
+  try{ out=await fileToCompressedDataUrl(file); }
+  catch(_){ alert('이미지를 읽을 수 없어요. 다른 사진을 시도해주세요. 🙏'); return; }
+  try{
+    const up=await uploadPhoto(out, 'home');
+    const map=getHomePhotos();
+    if(map[idx] && map[idx].path) deletePhotoFile(map[idx].path);  // 기존 사진 정리
+    map[idx]={url:up.url, path:up.path};
+    setHomePhotos(map);
+    renderHomeBoard();
+    addLog('홈 사진 추가');
+  }catch(err){
+    alert('사진 업로드에 실패했어요. 잠시 후 다시 시도해주세요. 🙏');
+  }
 }
 function deleteHomePhoto(idx){
   if(!confirm('이 사진을 삭제할까요?')) return;
-  homeDBDel(idx).then(()=>{
-    if(_homePhotoCache) delete _homePhotoCache[idx];
-    renderHomeBoard();
-  });
+  const map=getHomePhotos();
+  if(map[idx]){ deletePhotoFile(map[idx].path); delete map[idx]; setHomePhotos(map); }
+  renderHomeBoard();
 }
 
 // ── 홈 사진 드래그로 위치 변경 (관리자) ──
@@ -2211,14 +2217,11 @@ async function homeDrop(ev, idx){
   const src=_homeDragIdx; _homeDragIdx=null;
   if(src===idx) return;
   // 두 칸의 사진을 맞바꿈 (빈 칸이면 이동)
-  if(!_homePhotoCache) _homePhotoCache={};
-  const a=_homePhotoCache[src], b=_homePhotoCache[idx];
-  if(b!=null) _homePhotoCache[src]=b; else delete _homePhotoCache[src];
-  if(a!=null) _homePhotoCache[idx]=a; else delete _homePhotoCache[idx];
-  try{
-    await (b!=null ? homeDBSet(src,b) : homeDBDel(src));
-    await (a!=null ? homeDBSet(idx,a) : homeDBDel(idx));
-  }catch(_){ alert('위치 변경 저장에 실패했어요. 🙏'); }
+  const map=getHomePhotos();
+  const a=map[src], b=map[idx];
+  if(b!=null) map[src]=b; else delete map[src];
+  if(a!=null) map[idx]=a; else delete map[idx];
+  setHomePhotos(map);
   renderHomeBoard();
   addLog('홈 사진 위치 변경');
 }
@@ -2343,41 +2346,21 @@ function renderMembersGrid(){
 
 // ── 사진첩 (인스타 스타일) ──
 // ── 사진첩: 가족별 폴더 + IndexedDB ──
-let _galleryCache=null;   // [{id,folder,src,name,date}]
-let _galleryLoaded=false, _galleryLoading=false;
 let _galleryFolder='family';
+// 사진첩은 동기화 상태 d.gallery=[{id,folder,url,path,name,date}] 에 저장 → 모든 기기 공유
+function getGallery(){ const d=getS(); return d.gallery||[]; }
+function setGallery(arr){ const d=getS(); d.gallery=arr; setS(d); }
 function getGalleryFolders(){
   const members=getMembers();
   const folders=[{id:'family', label:'👨‍👩‍👧‍👦 가족 전체'}];
   members.forEach(m=>{ if(m.id!=='dad'&&m.id!=='mom') folders.push({id:m.id, label:`${m.emoji} ${m.name}`}); });
   return folders;
 }
-async function loadGallery(){
-  if(_galleryLoading) return; _galleryLoading=true;
-  // 기존 localStorage 사진(mainPhotos)을 '가족 전체' 폴더로 1회 이전
-  const d=getS();
-  if(d.mainPhotos && d.mainPhotos.length){
-    try{
-      for(const p of d.mainPhotos){
-        const id='g'+Date.now()+Math.random().toString(36).slice(2,7);
-        await galleryDBSet(id,{id,folder:'family',src:p.src,name:p.name,date:p.date});
-      }
-      delete d.mainPhotos; setS(d);
-    }catch(_){}
-  }
-  try{ _galleryCache=await galleryDBAll(); }catch(_){ _galleryCache=[]; }
-  // 폐지된 '부모님' 폴더 사진은 '가족 전체'로 이동
-  for(const p of (_galleryCache||[])){
-    if(p.folder==='parents'){ p.folder='family'; try{ await galleryDBSet(p.id,p); }catch(_){} }
-  }
-  _galleryLoaded=true; _galleryLoading=false;
-  renderGalleryFolders(); renderGallery(); updateStats();
-}
 function renderGalleryFolders(){
   const el=document.getElementById('gallery-folders');
   if(!el) return;
   const counts={};
-  (_galleryCache||[]).forEach(p=>{counts[p.folder]=(counts[p.folder]||0)+1;});
+  getGallery().forEach(p=>{counts[p.folder]=(counts[p.folder]||0)+1;});
   el.innerHTML=getGalleryFolders().map(f=>
     `<button class="gallery-folder${f.id===_galleryFolder?' active':''}" onclick="selectGalleryFolder('${f.id}')">${f.label}<span class="gallery-folder-count">${counts[f.id]||0}</span></button>`
   ).join('');
@@ -2386,18 +2369,17 @@ function selectGalleryFolder(id){ _galleryFolder=id; renderGalleryFolders(); ren
 function renderGallery(){
   const gg=document.getElementById('gallery-grid');
   if(!gg) return;
-  if(!_galleryLoaded){ loadGallery(); return; }
   gg.innerHTML='';
-  const photos=(_galleryCache||[]).filter(p=>p.folder===_galleryFolder);
+  const photos=getGallery().filter(p=>p.folder===_galleryFolder);
   photos.forEach(p=>{
     const el=document.createElement('div'); el.className='gallery-item';
-    el.innerHTML=`<img src="${p.src}" loading="lazy"/>
+    el.innerHTML=`<img src="${p.url}" loading="lazy"/>
       <div class="gallery-overlay">
         <div class="gallery-overlay-text">📷 ${p.name}</div>
         <div class="gallery-overlay-text" style="font-size:11px;font-weight:400;">${p.date}</div>
       </div>
       <button class="gallery-del-btn" onclick="deletePhoto('${p.id}',event)">✕</button>`;
-    el.querySelector('img').addEventListener('click',()=>openLightbox(p.src, p.name+' · '+p.date));
+    el.querySelector('img').addEventListener('click',()=>openLightbox(p.url, p.name+' · '+p.date));
     gg.appendChild(el);
   });
   const add=document.createElement('div'); add.className='gallery-upload-tile';
@@ -2407,30 +2389,28 @@ function renderGallery(){
 document.getElementById('photo-upload').addEventListener('change',async function(e){
   const files=Array.from(e.target.files); this.value='';
   if(!files.length) return;
-  if(!_galleryCache) _galleryCache=[];
+  const arr=getGallery();
   let ok=0;
   for(const file of files){
     try{
-      const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsDataURL(file);});
-      const out=await compressImage(dataUrl, 1600, 0.85);
-      const id='g'+Date.now()+Math.random().toString(36).slice(2,7);
-      const item={id,folder:_galleryFolder,src:out,name:file.name.replace(/\.[^.]+$/,''),date:new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'})};
-      await galleryDBSet(id,item);
-      _galleryCache.push(item); ok++;
+      const out=await fileToCompressedDataUrl(file);
+      const up=await uploadPhoto(out, 'gallery/'+_galleryFolder);
+      arr.push({id:up.id, folder:_galleryFolder, url:up.url, path:up.path, name:file.name.replace(/\.[^.]+$/,''), date:new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'})});
+      ok++;
     }catch(_){ /* 개별 실패는 건너뜀 */ }
   }
-  renderGalleryFolders(); renderGallery(); updateStats();
-  if(ok) addLog('사진 '+ok+'장 추가 ('+_galleryFolder+')');
-  else alert('사진을 저장하지 못했어요. 다시 시도해주세요. 🙏');
+  if(ok){ setGallery(arr); renderGalleryFolders(); renderGallery(); updateStats(); addLog('사진 '+ok+'장 추가 ('+_galleryFolder+')'); }
+  else alert('사진을 업로드하지 못했어요. 다시 시도해주세요. 🙏');
 });
 function deletePhoto(id,e){
   e.stopPropagation();
   if(!confirm("이 사진을 삭제할까요?"))return;
-  galleryDBDel(id).then(()=>{
-    _galleryCache=(_galleryCache||[]).filter(p=>p.id!==id);
-    renderGalleryFolders(); renderGallery(); updateStats();
-    addLog('사진 삭제');
-  });
+  const arr=getGallery();
+  const p=arr.find(x=>x.id===id);
+  if(p) deletePhotoFile(p.path);
+  setGallery(arr.filter(x=>x.id!==id));
+  renderGalleryFolders(); renderGallery(); updateStats();
+  addLog('사진 삭제');
 }
 function openLightbox(src,caption){
   document.getElementById('lightbox-img').src=src;
@@ -2518,7 +2498,7 @@ function onDiaryPhotoSelected(e){
 function updateStats(){
   const d=getS();
   const setTxt=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  setTxt('stat-photos',(_galleryCache||[]).length);
+  setTxt('stat-photos',getGallery().length);
   setTxt('stat-diaries',(d.mainDiaries||[]).length);
   setTxt('stat-buckets',(d.buckets||[]).length);
 }
@@ -2545,15 +2525,31 @@ function renderMiniGallery(m){
   const d=getS(); const photos=(d[m.id]&&d[m.id].photos)||[];
   const el=document.getElementById('modal-gallery'); el.innerHTML='';
   m.gallery.forEach(g=>{const div=document.createElement('div');div.className='mini-photo';div.textContent=g;el.appendChild(div);});
-  photos.forEach((src,i)=>{const div=document.createElement('div');div.className='mini-photo';div.innerHTML=`<img src="${src}"/><button onclick="delMiniPhoto(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;">✕</button>`;el.appendChild(div);});
+  photos.forEach((p,i)=>{const src=(typeof p==='string')?p:p.url;const div=document.createElement('div');div.className='mini-photo';div.innerHTML=`<img src="${src}"/><button onclick="delMiniPhoto(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;">✕</button>`;el.appendChild(div);});
   const add=document.createElement('button');add.className='mini-upload-btn';add.innerHTML='📷<span>추가</span>';add.onclick=()=>document.getElementById('mini-photo-upload').click();el.appendChild(add);
 }
-document.getElementById('mini-photo-upload').addEventListener('change',function(e){
-  if(!curMember)return; const files=Array.from(e.target.files); const d=getS();
-  if(!d[curMember.id])d[curMember.id]={}; if(!d[curMember.id].photos)d[curMember.id].photos=[];
-  let loaded=0; files.forEach(file=>{const reader=new FileReader();reader.onload=ev=>{d[curMember.id].photos.push(ev.target.result);loaded++;if(loaded===files.length){setS(d);renderMiniGallery(curMember);}};reader.readAsDataURL(file);}); this.value='';
+document.getElementById('mini-photo-upload').addEventListener('change',async function(e){
+  if(!curMember)return; const files=Array.from(e.target.files); this.value='';
+  if(!files.length) return;
+  const mid=curMember.id;
+  let ok=0;
+  for(const file of files){
+    try{
+      const out=await fileToCompressedDataUrl(file);
+      const up=await uploadPhoto(out, 'member/'+mid);
+      const d=getS(); if(!d[mid])d[mid]={}; if(!d[mid].photos)d[mid].photos=[];
+      d[mid].photos.push({url:up.url, path:up.path}); setS(d);
+      ok++;
+    }catch(_){}
+  }
+  if(ok){ renderMiniGallery(curMember); } else alert('사진 업로드에 실패했어요. 🙏');
 });
-function delMiniPhoto(i){if(!curMember||!confirm("삭제?"))return;const d=getS();d[curMember.id].photos.splice(i,1);setS(d);renderMiniGallery(curMember);}
+function delMiniPhoto(i){
+  if(!curMember||!confirm("삭제?"))return;
+  const d=getS(); const arr=(d[curMember.id]&&d[curMember.id].photos)||[];
+  const p=arr[i]; if(p && typeof p!=='string') deletePhotoFile(p.path);
+  arr.splice(i,1); setS(d); renderMiniGallery(curMember);
+}
 function renderMessages(mid){
   const d=getS(); const msgs=(d[mid]&&d[mid].messages)||[];
   document.getElementById('modal-messages').innerHTML=msgs.length===0?'<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">첫 메시지를 남겨보세요 💌</p>':msgs.map(m=>`<div class="message-bubble"><div class="msg-from">${m.from}</div><div class="msg-text">${m.text}</div><div class="msg-date">${m.date}</div></div>`).join('');
@@ -2625,7 +2621,7 @@ function refreshAdminDashboard(){
   const d=getS();
   const s=document.getElementById('admin-stats');
   s.innerHTML=[
-    {n:(_galleryCache||[]).length,l:'사진'},
+    {n:getGallery().length,l:'사진'},
     {n:(d.mainDiaries||[]).length,l:'일기'},
     {n:(d.buckets||[]).length,l:'버킷리스트'},
     {n:getBirthdayItems().length+getAnniversaryItems().length,l:'생일·기념일'},
@@ -2883,11 +2879,10 @@ function saveSettings(){
   addLog('설정 저장: '+d.siteName);
   alert('설정이 저장되었습니다! ✅');
 }
-async function clearPhotos(){
+function clearPhotos(){
   if(!confirm("사진첩의 모든 사진을 삭제할까요?"))return;
-  const all=_galleryCache||await galleryDBAll().catch(()=>[]);
-  for(const p of all){ try{ await galleryDBDel(p.id); }catch(_){} }
-  _galleryCache=[]; renderGalleryFolders(); renderGallery(); updateStats();
+  getGallery().forEach(p=>deletePhotoFile(p.path));
+  setGallery([]); renderGalleryFolders(); renderGallery(); updateStats();
   addLog('사진 전체 삭제'); alert('사진이 삭제되었습니다.');
 }
 function clearDiaries(){if(!confirm("일기를 모두 삭제할까요?"))return;const d=getS();d.mainDiaries=[];setS(d);renderMainDiary();addLog('일기 전체 삭제');alert('일기가 삭제되었습니다.');}

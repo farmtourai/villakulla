@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 우리 가족 허용 목록 (Firestore 규칙과 동일하게 유지)
+    function isFamily() {
+      return request.auth != null && request.auth.token.email in [
+        'farmtourai@gmail.com',
+        'moakboy@naver.com',
+        'moakangel@naver.com',
+        'moakman@naver.com',
+        'moakking@naver.com'
+      ];
+    }
+
+    match /{allPaths=**} {
+      allow read: if isFamily();
+      // 업로드는 가족 + 이미지 + 15MB 이하만
+      allow write: if isFamily()
+        && request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
