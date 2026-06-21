@@ -2178,7 +2178,8 @@ async function onHomePhotoSelected(e){
     renderHomeBoard();
     addLog('홈 사진 추가');
   }catch(err){
-    alert('사진 업로드에 실패했어요. 잠시 후 다시 시도해주세요. 🙏');
+    console.error('홈 사진 업로드 오류:', err);
+    alert('사진 업로드에 실패했어요 🙏\n오류 코드: ' + (err && err.code ? err.code : err));
   }
 }
 function deleteHomePhoto(idx){
@@ -2390,17 +2391,17 @@ document.getElementById('photo-upload').addEventListener('change',async function
   const files=Array.from(e.target.files); this.value='';
   if(!files.length) return;
   const arr=getGallery();
-  let ok=0;
+  let ok=0, lastErr=null;
   for(const file of files){
     try{
       const out=await fileToCompressedDataUrl(file);
       const up=await uploadPhoto(out, 'gallery/'+_galleryFolder);
       arr.push({id:up.id, folder:_galleryFolder, url:up.url, path:up.path, name:file.name.replace(/\.[^.]+$/,''), date:new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'})});
       ok++;
-    }catch(_){ /* 개별 실패는 건너뜀 */ }
+    }catch(err){ lastErr=err; console.error('갤러리 업로드 오류:', err); }
   }
   if(ok){ setGallery(arr); renderGalleryFolders(); renderGallery(); updateStats(); addLog('사진 '+ok+'장 추가 ('+_galleryFolder+')'); }
-  else alert('사진을 업로드하지 못했어요. 다시 시도해주세요. 🙏');
+  else alert('사진을 업로드하지 못했어요 🙏\n오류 코드: ' + (lastErr && lastErr.code ? lastErr.code : lastErr));
 });
 function deletePhoto(id,e){
   e.stopPropagation();
