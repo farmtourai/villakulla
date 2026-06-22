@@ -1738,7 +1738,9 @@ let curSeason="spring";
 
 function setSeason(s){
   curSeason=s;
-  document.body.className=s;
+  // 계절 클래스만 교체 — is-admin 등 다른 body 클래스는 보존
+  ['spring','summer','autumn','winter'].forEach(x=>document.body.classList.remove(x));
+  document.body.classList.add(s);
   const si=SEASONS[s];
   document.getElementById('hero-season-label').textContent=si.badge;
   document.getElementById('footer-season').textContent=si.footer;
