@@ -1264,6 +1264,13 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
       <div class="admin-notice">새 가족 계정 추가/삭제는 Firebase 콘솔 → Authentication → Users 에서 합니다.</div>
 
       <div class="admin-divider"></div>
+      <div class="admin-section-title">🩺 동기화 진단</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="admin-btn primary" onclick="diagnoseSync()">🩺 동기화 상태 진단</button>
+        <div class="admin-notice">핸드폰에 데이터가 안 보일 때 눌러보세요. 상태 용량과 원인을 알려줘요.</div>
+      </div>
+
+      <div class="admin-divider"></div>
       <div class="admin-section-title">🗑️ 데이터 관리</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <button class="admin-btn danger" onclick="clearPhotos()">사진 전체 삭제</button>
@@ -2908,6 +2915,34 @@ function clearPhotos(){
   getGallery().forEach(p=>deletePhotoFile(p.path));
   setGallery([]); renderGalleryFolders(); renderGallery(); updateStats();
   addLog('사진 전체 삭제'); alert('사진이 삭제되었습니다.');
+}
+function diagnoseSync(){
+  const raw = localStorage.getItem(SK) || "{}";
+  const total = raw.length;
+  let d={}; try{ d=JSON.parse(raw); }catch(_){}
+  const LIMIT = 900000;
+  const blocked = total > LIMIT;
+  const base64Count = (raw.match(/data:image\//g)||[]).length;
+  const base64Bytes = (raw.match(/data:image\/[^"\\]+/g)||[]).reduce((s,x)=>s+x.length,0);
+  const sizeOf = v => { try{ return JSON.stringify(v).length; }catch(_){ return 0; } };
+  const sizes = Object.entries(d).map(([k,v])=>[k, sizeOf(v)]).sort((a,b)=>b[1]-a[1]);
+  const top = sizes.slice(0,6).map(([k,s])=>`  · ${k}: ${s.toLocaleString()}`).join('\n');
+  const who = (auth.currentUser&&auth.currentUser.email)||'(로그인 안 됨)';
+  const msg =
+    `🩺 동기화 진단\n\n`+
+    `로그인 계정: ${who}\n`+
+    `전체 상태 용량: ${total.toLocaleString()} bytes\n`+
+    `동기화 한도: ${LIMIT.toLocaleString()} bytes\n`+
+    `동기화 차단 여부: ${blocked ? '❌ 예 — 용량 초과가 원인!' : '✅ 아니오 (용량은 정상)'}\n\n`+
+    `본문에 박힌 base64 사진: ${base64Count}개 (${base64Bytes.toLocaleString()} bytes)\n\n`+
+    `용량 큰 항목 Top:\n${top}\n\n`+
+    (blocked
+      ? `▶ 옛날 사진이 본문에 base64로 박혀 용량을 넘겼어요.\n  "base64 사진 정리" 버튼으로 Storage로 옮기면 동기화가 다시 됩니다.`
+      : base64Count>0
+        ? `용량은 정상이지만 base64 사진 ${base64Count}개가 남아있어요. 정리하면 더 안전해요.`
+        : `용량 정상. 핸드폰에 안 보이면 계정/권한 문제일 수 있어요(핸드폰 로그인 이메일 확인).`);
+  alert(msg);
+  try{ console.log(msg); }catch(_){}
 }
 function clearDiaries(){if(!confirm("일기를 모두 삭제할까요?"))return;const d=getS();(d.mainDiaries||[]).forEach(dd=>cleanupDiaryPhotos(dd.body));d.mainDiaries=[];setS(d);renderMainDiary();addLog('일기 전체 삭제');alert('일기가 삭제되었습니다.');}
 function clearAll(){
