@@ -895,6 +895,12 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   /* footer는 app-layout 밖으로 이동됨 → 하단바 가리지 않게 여백 */
   footer{padding-bottom:74px;}
 }
+/* 가족 스토리 연도 구간 탭 */
+.story-eras{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 26px;}
+.story-era-btn{padding:8px 16px;border:1.5px solid var(--season-accent);background:var(--card);color:var(--season-accent);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.18s;white-space:nowrap;}
+.story-era-btn:hover{background:var(--season-bg1);transform:translateY(-1px);}
+.story-era-btn.active{background:var(--season-accent);color:#fff;box-shadow:0 4px 12px -3px var(--season-accent);}
+.story-era-empty{font-size:11px;opacity:0.6;}
 </style>
 </head>
 <body class="spring">
@@ -1148,6 +1154,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
         <button type="button" class="admin-btn secondary home-split-btn" data-n="3" onclick="setHomeSplitFromAdmin(3)" style="flex:1;">3칸</button>
         <button type="button" class="admin-btn secondary home-split-btn" data-n="4" onclick="setHomeSplitFromAdmin(4)" style="flex:1;">4칸</button>
         <button type="button" class="admin-btn secondary home-split-btn" data-n="5" onclick="setHomeSplitFromAdmin(5)" style="flex:1;">5칸</button>
+        <button type="button" class="admin-btn secondary home-split-btn" data-n="6" onclick="setHomeSplitFromAdmin(6)" style="flex:1;">6칸</button>
       </div>
 
       <div class="admin-divider"></div>
@@ -1445,6 +1452,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <div class="section-title">📖 가족 스토리</div>
   <div class="divider"></div>
   <p class="section-sub">우리 가족의 소중한 역사를 기록해요 ✨</p>
+  <div class="story-eras" id="story-eras"></div>
   <div class="timeline" id="timeline-list"></div>
 
   <!-- 👑 관리자 전용: 스토리 추가 -->
@@ -1621,7 +1629,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v8 · 2026-06-22</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v9 · 2026-06-22</span>
 </footer>
 
 <script>
@@ -2145,6 +2153,7 @@ const HOME_GRID = {
   3:{cols:'1fr 1fr 1fr',   rows:'1fr'},
   4:{cols:'1fr 1fr',       rows:'1fr 1fr'},
   5:{cols:'1fr 1fr 1fr',   rows:'1fr 1fr'},
+  6:{cols:'1fr 1fr 1fr',   rows:'1fr 1fr'},
 };
 function renderHomeBoard(){
   const board=document.getElementById('home-photo-board');
@@ -2907,11 +2916,11 @@ function applyHeroStyles(d){
   if(inner) inner.style.textAlign = align;
   if(hero)  hero.style.justifyContent = align==='left' ? 'flex-start' : align==='right' ? 'flex-end' : 'center';
 
-  // 히어로 높이 — 좌/우 사이드바도 함께 내려서 가려지지 않게
+  // 히어로 높이 (히어로는 스크롤되는 일반 흐름 → 사이드바/패널 top은 CSS sticky(top:0)에 맡김)
   const ht = (d.heroHeight||80)+'px';
   if(hero)    hero.style.height = ht;
-  if(sidebar) sidebar.style.top = ht;
-  if(rail)    rail.style.top = ht;
+  if(sidebar) sidebar.style.top = '';   // 인라인 top 제거 → CSS(sticky top:0 / 모바일 하단바) 적용
+  if(rail)    rail.style.top = '';
   if(layout)  layout.style.minHeight = `calc(100vh - ${ht})`;
 }
 function blendHex(c1,c2,t){
@@ -3492,15 +3501,47 @@ function storyDateLabel(s){
   return `${y}년 ${parseInt(m)}월 ${parseInt(dd)}일`;
 }
 
+// ── 연도 구간(에라) 분할: 2010년 이전 + 이후 5년 단위 ──
+let _storyEra = null;   // 현재 선택된 구간 key
+function storyEraKey(year){
+  if(!year || year < 2010) return 'pre2010';
+  return String(2010 + Math.floor((year-2010)/5)*5);   // 2010,2015,2020,2025...
+}
+function storyEraLabel(key){
+  if(key==='pre2010') return '2010년 이전';
+  const bs=parseInt(key), cy=new Date().getFullYear();
+  return (bs+4 >= cy) ? (bs+'~현재') : (bs+'-'+(bs+4));
+}
+function storyEraSort(key){ return key==='pre2010' ? 0 : parseInt(key); }
+function switchStoryEra(key){ _storyEra=key; renderStory(); }
+
 function renderStory(){
   const stories = getStories().slice().sort((a,b)=>storyKey(a).localeCompare(storyKey(b)));
+  const tabsEl = document.getElementById('story-eras');
   const el = document.getElementById('timeline-list');
   if(!el) return;
-  if(!stories.length){ el.innerHTML='<p style="text-align:center;color:var(--muted);padding:30px;">관리자 모드에서 첫 번째 스토리를 추가해보세요! 📖</p>'; return; }
-  el.innerHTML = stories.map((s,i)=>`
+  if(tabsEl) tabsEl.innerHTML='';
+  if(!stories.length){
+    el.innerHTML='<p style="text-align:center;color:var(--muted);padding:30px;">관리자 모드에서 첫 번째 스토리를 추가해보세요! 📖</p>';
+    return;
+  }
+  // 구간별 그룹화
+  const groups={};
+  stories.forEach(s=>{ const k=storyEraKey(storyYear(s)); (groups[k]||(groups[k]=[])).push(s); });
+  const eras = Object.keys(groups).sort((a,b)=>storyEraSort(a)-storyEraSort(b));
+  // 선택 구간: 없거나 비었으면 가장 최근(마지막) 구간 = 최신이 기본
+  if(!_storyEra || !groups[_storyEra]) _storyEra = eras[eras.length-1];
+  // 구간 탭
+  if(tabsEl){
+    tabsEl.innerHTML = eras.map(k=>
+      `<button class="story-era-btn${k===_storyEra?' active':''}" onclick="switchStoryEra('${k}')">${storyEraLabel(k)} <span class="story-era-empty">(${groups[k].length})</span></button>`
+    ).join('');
+  }
+  // 선택 구간의 스토리만 타임라인에 표시 (오래된→최신)
+  el.innerHTML = (groups[_storyEra]||[]).map(s=>`
     <div class="tl-item">
       <div class="tl-content">
-        <button class="tl-del" onclick="deleteStory('${s.id}')">✕</button>
+        ${isAdmin?`<button class="tl-del" onclick="deleteStory('${s.id}')">✕</button>`:''}
         <div class="tl-year">${storyDateLabel(s)}</div>
         <div class="tl-title">${s.emoji||'📌'} ${s.title}</div>
         <div class="tl-desc">${s.desc||''}</div>
@@ -3520,6 +3561,7 @@ function addStory(){
   const stories = getStories();
   stories.push({id:Date.now().toString(), date, year:parseInt(date.slice(0,4)), emoji, title, desc});
   setStories(stories);
+  _storyEra = storyEraKey(parseInt(date.slice(0,4)));   // 방금 추가한 스토리 구간으로 이동
   document.getElementById('ac-story-emoji').value='';
   document.getElementById('ac-story-title').value='';
   document.getElementById('ac-story-date').value='';
