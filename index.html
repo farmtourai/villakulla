@@ -2452,6 +2452,7 @@ function saveMainDiary(){
   const hasImg=editor.querySelector('img')!=null;
   const tags=document.getElementById('main-diary-tags').value.trim();
   if(!title||(!hasText&&!hasImg)){alert("제목과 내용을 입력해주세요!");return;}
+  if(editor.querySelector('img[data-uploading]')){alert("사진 업로드가 끝날 때까지 잠시만 기다려주세요. ⏳");return;}
   const now=new Date(); const d=getS(); if(!d.mainDiaries)d.mainDiaries=[];
   d.mainDiaries.push({title,author,body,tags,day:now.getDate(),month:(now.getMonth()+1)+'월',date:now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'})});
   try{ setS(d); }
@@ -2462,7 +2463,15 @@ function saveMainDiary(){
   editor.innerHTML='';
   renderMainDiary(); addLog('일기 작성: '+title);
 }
-function deleteMainDiary(i){if(!confirm("삭제?"))return;const d=getS();d.mainDiaries.splice(i,1);setS(d);renderMainDiary();addLog('일기 삭제');}
+// 일기 본문 HTML에서 Storage에 올린 사진(data-path)을 찾아 삭제
+function cleanupDiaryPhotos(html){
+  if(!html) return;
+  try{
+    const tmp=document.createElement('div'); tmp.innerHTML=html;
+    tmp.querySelectorAll('img[data-path]').forEach(im=>{ const p=im.getAttribute('data-path'); if(p) deletePhotoFile(p); });
+  }catch(_){}
+}
+function deleteMainDiary(i){if(!confirm("삭제?"))return;const d=getS();const removed=d.mainDiaries.splice(i,1)[0];setS(d);if(removed)cleanupDiaryPhotos(removed.body);renderMainDiary();addLog('일기 삭제');}
 
 // 일기 본문에 사진 삽입 (커서 위치)
 let _diaryRange=null;
@@ -2475,30 +2484,38 @@ function insertDiaryPhoto(){
   saveDiaryRange();
   document.getElementById('diary-photo-input').click();
 }
-function onDiaryPhotoSelected(e){
+async function onDiaryPhotoSelected(e){
   const file=e.target.files&&e.target.files[0]; e.target.value='';
   if(!file) return;
-  const reader=new FileReader();
-  reader.onload=async ev=>{
-    let out;
-    try{ out=await compressImage(ev.target.result, 1000, 0.78); }
-    catch(_){ alert('이미지를 읽을 수 없어요. 🙏'); return; }
-    const editor=document.getElementById('main-diary-body');
-    const img=document.createElement('img'); img.src=out;
-    editor.focus();
-    const sel=window.getSelection();
-    if(_diaryRange && editor.contains(_diaryRange.commonAncestorContainer)){
-      sel.removeAllRanges(); sel.addRange(_diaryRange);
-      _diaryRange.collapse(false);
-      _diaryRange.insertNode(img);
-      _diaryRange.setStartAfter(img); _diaryRange.collapse(true);
-      sel.removeAllRanges(); sel.addRange(_diaryRange);
-    } else {
-      editor.appendChild(img);
-    }
-    saveDiaryRange();
-  };
-  reader.readAsDataURL(file);
+  const editor=document.getElementById('main-diary-body');
+  // 압축본을 즉시 미리보기로 삽입 (업로드 중에는 흐리게 표시)
+  let preview;
+  try{ preview=await fileToCompressedDataUrl(file, 1000, 0.78); }
+  catch(_){ alert('이미지를 읽을 수 없어요. 🙏'); return; }
+  const img=document.createElement('img'); img.src=preview;
+  img.setAttribute('data-uploading','1'); img.style.opacity='0.45';
+  editor.focus();
+  const sel=window.getSelection();
+  if(_diaryRange && editor.contains(_diaryRange.commonAncestorContainer)){
+    sel.removeAllRanges(); sel.addRange(_diaryRange);
+    _diaryRange.collapse(false);
+    _diaryRange.insertNode(img);
+    _diaryRange.setStartAfter(img); _diaryRange.collapse(true);
+    sel.removeAllRanges(); sel.addRange(_diaryRange);
+  } else {
+    editor.appendChild(img);
+  }
+  saveDiaryRange();
+  // Storage 업로드 후 다운로드 URL로 교체 (본문엔 base64 대신 URL만 저장)
+  try{
+    const up=await uploadPhoto(preview, 'diary');
+    img.src=up.url;
+    img.setAttribute('data-path', up.path);
+    img.removeAttribute('data-uploading'); img.style.opacity='';
+  }catch(err){
+    img.remove();
+    alert('사진 업로드에 실패했어요. 다시 시도해주세요. 🙏');
+  }
 }
 
 // ── 통계 ──
@@ -2892,7 +2909,7 @@ function clearPhotos(){
   setGallery([]); renderGalleryFolders(); renderGallery(); updateStats();
   addLog('사진 전체 삭제'); alert('사진이 삭제되었습니다.');
 }
-function clearDiaries(){if(!confirm("일기를 모두 삭제할까요?"))return;const d=getS();d.mainDiaries=[];setS(d);renderMainDiary();addLog('일기 전체 삭제');alert('일기가 삭제되었습니다.');}
+function clearDiaries(){if(!confirm("일기를 모두 삭제할까요?"))return;const d=getS();(d.mainDiaries||[]).forEach(dd=>cleanupDiaryPhotos(dd.body));d.mainDiaries=[];setS(d);renderMainDiary();addLog('일기 전체 삭제');alert('일기가 삭제되었습니다.');}
 function clearAll(){
   if(!confirm("⚠️ 모든 데이터를 초기화할까요?\n이 작업은 되돌릴 수 없어요!"))return;
   if(!confirm("정말로 초기화하시겠습니까?"))return;
