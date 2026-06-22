@@ -869,16 +869,36 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 
 @media(max-width:640px){
   /* 히어로: 모바일 전용 레이아웃 */
-  .hero{position:relative;height:auto;min-height:80px;padding:14px 14px 12px;}
+  .hero{
+    position:relative;
+    height:auto !important;
+    min-height:0;
+    padding:10px 14px 12px;
+    overflow:visible;
+    display:flex;flex-direction:column;
+    align-items:stretch;justify-content:flex-start;
+  }
+  #hero-canvas{position:absolute;inset:0;pointer-events:none;}
   .hero-topbar{
     position:relative;top:auto;right:auto;
-    display:flex;justify-content:flex-end;gap:6px;
-    margin-bottom:8px;
+    display:flex;justify-content:flex-end;align-items:center;gap:6px;
+    margin-bottom:6px;z-index:2;
   }
-  .hero-topbar button{font-size:11px;padding:4px 10px;}
-  .hero-inner{padding:0 4px;}
-  .hero-title-line,.hero-span-line{font-size:clamp(16px,4.5vw,22px);}
-  .hero-sub{font-size:11px;margin-top:3px;}
+  .hero-topbar .admin-badge,
+  .hero-topbar .mypw-btn,
+  .hero-topbar .nav-logout{font-size:10px;padding:3px 9px;border-radius:12px;}
+  .hero-inner{position:relative;z-index:2;text-align:center;padding:4px 0 6px;}
+  .hero-title-line,.hero-span-line{font-size:clamp(15px,4vw,20px);}
+  .hero-sub{font-size:10.5px;margin-top:2px;}
+
+/* 히어로: 가로 모드 (landscape) */
+@media(max-width:900px) and (orientation:landscape){
+  .hero{flex-direction:row;align-items:center;padding:6px 14px;}
+  .hero-topbar{margin-bottom:0;margin-left:auto;flex-shrink:0;}
+  .hero-inner{flex:1;text-align:center;}
+  .hero-title-line,.hero-span-line{font-size:13px;}
+  .hero-sub{display:none;}
+}
   /* 레이아웃: 세로 흐름 */
   #app-layout{display:block;min-height:auto;}
   /* 사이드바 → 히어로 아래 위치(JS가 DOM 이동), 스크롤 시 상단 고정 */
@@ -1355,29 +1375,28 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <div class="admin-member-list" id="admin-member-list"></div>
     <div class="admin-member-edit" id="admin-member-edit" style="display:none">
       <div class="admin-member-edit-title" id="admin-edit-title">✏️ 편집 중</div>
-      <!-- 줄1: 이모지 / 이름 / 역할 -->
-      <div class="admin-row">
-        <div class="admin-field" style="flex:0 0 72px"><label>이모지</label><input id="ae-emoji" maxlength="4"/></div>
+      <!-- 줄1: 이모지 / 이름 / 생년월일(음력/양력) / 역할 -->
+      <div class="admin-row" style="align-items:flex-end;">
+        <div class="admin-field" style="flex:0 0 64px"><label>이모지</label><input id="ae-emoji" maxlength="4"/></div>
         <div class="admin-field" style="flex:1"><label>이름</label><input id="ae-name"/></div>
-        <div class="admin-field" style="flex:1.5"><label>역할 / 직업</label><input id="ae-role"/></div>
+        <div class="admin-field" style="flex:1.4">
+          <label>생년월일</label>
+          <input type="date" id="ae-bday" style="width:100%;"/>
+          <div style="display:flex;gap:10px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#888;cursor:pointer;">
+              <input type="radio" name="ae-cal" value="solar" checked style="accent-color:#0288D1;width:12px;height:12px;"/> ☀️양력
+            </label>
+            <label style="display:flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#888;cursor:pointer;">
+              <input type="radio" name="ae-cal" value="lunar" style="accent-color:#e85d8a;width:12px;height:12px;"/> 🌙음력
+            </label>
+          </div>
+        </div>
+        <div class="admin-field" style="flex:1.4"><label>역할 / 직업</label><input id="ae-role"/></div>
       </div>
       <!-- 줄2: 소개 / 좋아하는 것 -->
       <div class="admin-row">
         <div class="admin-field" style="flex:1"><label>소개 한마디</label><input id="ae-desc" placeholder="한 줄 소개"/></div>
         <div class="admin-field" style="flex:1"><label>좋아하는 것 (쉼표로 구분)</label><input id="ae-likes" placeholder="골프, 드라이브, 고기"/></div>
-      </div>
-      <!-- 줄3: 생년월일 + 음력/양력 인라인 -->
-      <div class="admin-field">
-        <label>생년월일</label>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <input type="date" id="ae-bday" style="flex:1;min-width:130px;"/>
-          <label style="display:flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;">
-            <input type="radio" name="ae-cal" value="solar" checked style="accent-color:#0288D1;width:13px;height:13px;"/> ☀️ 양력
-          </label>
-          <label style="display:flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;">
-            <input type="radio" name="ae-cal" value="lunar" style="accent-color:#e85d8a;width:13px;height:13px;"/> 🌙 음력
-          </label>
-        </div>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="admin-btn primary" onclick="saveMemberEdit()">💾 저장</button>
