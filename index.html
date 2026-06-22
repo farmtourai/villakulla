@@ -737,8 +737,12 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 .gallery-folder.active .gallery-folder-count{background:rgba(255,255,255,0.3);}
 
 /* ─────── 인스타 피드 업그레이드 ─────── */
-.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;}
-.gallery-item{position:relative;aspect-ratio:1;overflow:hidden;cursor:pointer;background:#f0f0f0;}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;}
+.gallery-item{position:relative;aspect-ratio:1;overflow:hidden;cursor:pointer;background:#f0f0f0;border-radius:10px;}
+/* 사진 추가 버튼 (사진 타일의 약 1/4 크기) */
+.gallery-toolbar{display:flex;justify-content:flex-end;margin-bottom:12px;}
+.gallery-add-sm{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border:1.5px dashed var(--season-accent);background:var(--season-bg1);color:var(--season-accent);border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.gallery-add-sm:hover{background:var(--season-accent);color:#fff;}
 .gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform 0.35s;}
 .gallery-item:hover img{transform:scale(1.07);}
 .gallery-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:background 0.25s;}
@@ -869,24 +873,25 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   .hero-title-line,.hero-span-line{font-size:18px;}
   /* 레이아웃: 세로 흐름 */
   #app-layout{display:block;min-height:auto;}
-  /* 사이드바 → 하단 고정 탭바 (엄지로 누르기 쉬움) */
+  /* 사이드바 → 하단 고정 탭바 (가로 스크롤, 제목 표시) */
   #left-sidebar{
     position:fixed;left:0;right:0;bottom:0;top:auto;
-    width:auto;height:auto;flex-direction:row;
-    padding:5px 3px;gap:1px;
+    width:auto;height:auto;flex-direction:row;flex-wrap:nowrap;
+    padding:5px 4px;gap:2px;
     border-right:none;border-top:1px solid var(--border);
     box-shadow:0 -3px 16px rgba(0,0,0,0.09);
     overflow-x:auto;overflow-y:hidden;
-    justify-content:space-between;
+    -webkit-overflow-scrolling:touch;
+    justify-content:flex-start;
   }
   .sidebar-logo,.sidebar-divider{display:none;}
   .sidebar-item{
-    flex:1 1 0;min-width:34px;width:auto;
-    flex-direction:column;gap:2px;
-    padding:6px 1px;justify-content:center;border-radius:10px;
+    flex:0 0 auto;width:auto;min-width:58px;
+    flex-direction:column;gap:3px;
+    padding:6px 8px;justify-content:center;border-radius:10px;
   }
-  .sidebar-item-label{display:none;}
-  .sidebar-item-icon{width:auto;font-size:19px;}
+  .sidebar-item-label{display:block;font-size:10px;line-height:1;white-space:nowrap;}
+  .sidebar-item-icon{width:auto;font-size:20px;}
   .sidebar-item.active{box-shadow:0 3px 10px -3px var(--season-accent);}
   /* 본문 전체폭 + 하단바 만큼 여백 */
   #main-content{margin:0;min-height:auto;padding-bottom:8px;}
@@ -1516,6 +1521,9 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <div class="divider"></div>
   <p class="section-sub">가족별 폴더에 소중한 순간들을 담아요 📷</p>
   <div class="gallery-folders" id="gallery-folders"></div>
+  <div class="gallery-toolbar">
+    <button class="gallery-add-sm" onclick="document.getElementById('photo-upload').click()">➕ 사진 추가</button>
+  </div>
   <div class="gallery-grid" id="gallery-grid"></div>
   <input type="file" id="photo-upload" accept="image/*" multiple/>
 </section>
@@ -1629,7 +1637,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v9 · 2026-06-22</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v10 · 2026-06-22</span>
 </footer>
 
 <script>
@@ -2435,12 +2443,9 @@ function renderGallery(){
         <div class="gallery-overlay-text" style="font-size:11px;font-weight:400;">${p.date}</div>
       </div>
       <button class="gallery-del-btn" onclick="deletePhoto('${p.id}',event)">✕</button>`;
-    el.querySelector('img').addEventListener('click',()=>openLightbox(p.url, p.name+' · '+p.date));
+    el.querySelector('img').addEventListener('click',()=>window.open(p.url,'_blank','noopener'));
     gg.appendChild(el);
   });
-  const add=document.createElement('div'); add.className='gallery-upload-tile';
-  add.innerHTML='<div class="gallery-upload-icon">➕</div><div class="gallery-upload-label">사진 추가</div>';
-  add.onclick=()=>document.getElementById('photo-upload').click(); gg.appendChild(add);
 }
 document.getElementById('photo-upload').addEventListener('change',async function(e){
   const files=Array.from(e.target.files); this.value='';
