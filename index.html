@@ -421,18 +421,19 @@ body.is-admin .admin-only{display:block;}
 .admin-btn.danger{background:#fee2e2;color:#dc2626;}
 .admin-btn.danger:hover{background:#fecaca;}
 .admin-btn.secondary{background:#f0f0f0;color:#555;}
-.admin-member-list{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.admin-member-list{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
 .admin-member-item{
-  background:#f8f8f8;border-radius:12px;padding:14px;
-  display:flex;align-items:center;gap:12px;
+  background:#f8f8f8;border-radius:12px;padding:8px 12px;
+  display:flex;align-items:center;gap:7px;
   border:1.5px solid #ebebeb;cursor:pointer;transition:all 0.2s;
+  flex:0 0 auto;
 }
 .admin-member-item:hover{border-color:#667eea;background:#f0f0ff;}
 .admin-member-item.selected{border-color:#667eea;background:#efefff;}
-.am-emoji{font-size:28px;}
+.am-emoji{font-size:20px;}
 .am-info{flex:1;}
-.am-name{font-weight:700;font-size:14px;color:#333;}
-.am-role{font-size:11px;color:#888;margin-top:2px;}
+.am-name{font-weight:700;font-size:13px;color:#333;}
+.am-role{font-size:10px;color:#888;}
 .admin-member-edit{background:white;border-radius:14px;padding:18px;border:1.5px solid #e0e0ff;margin-bottom:14px;}
 .admin-member-edit-title{font-size:13px;font-weight:700;color:#667eea;margin-bottom:14px;}
 .admin-row{display:flex;gap:10px;}
@@ -867,10 +868,17 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 }
 
 @media(max-width:640px){
-  /* 히어로: 고정 해제 → 스크롤되며 사라짐(상단 점거 X) */
-  .hero{position:relative;height:auto;min-height:52px;padding:12px 16px;}
-  .hero-topbar{top:8px;right:10px;}
-  .hero-title-line,.hero-span-line{font-size:18px;}
+  /* 히어로: 모바일 전용 레이아웃 */
+  .hero{position:relative;height:auto;min-height:80px;padding:14px 14px 12px;}
+  .hero-topbar{
+    position:relative;top:auto;right:auto;
+    display:flex;justify-content:flex-end;gap:6px;
+    margin-bottom:8px;
+  }
+  .hero-topbar button{font-size:11px;padding:4px 10px;}
+  .hero-inner{padding:0 4px;}
+  .hero-title-line,.hero-span-line{font-size:clamp(16px,4.5vw,22px);}
+  .hero-sub{font-size:11px;margin-top:3px;}
   /* 레이아웃: 세로 흐름 */
   #app-layout{display:block;min-height:auto;}
   /* 사이드바 → 히어로 아래 위치(JS가 DOM 이동), 스크롤 시 상단 고정 */
@@ -1347,20 +1355,29 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <div class="admin-member-list" id="admin-member-list"></div>
     <div class="admin-member-edit" id="admin-member-edit" style="display:none">
       <div class="admin-member-edit-title" id="admin-edit-title">✏️ 편집 중</div>
+      <!-- 줄1: 이모지 / 이름 / 역할 -->
       <div class="admin-row">
-        <div class="admin-field"><label>이모지</label><input id="ae-emoji" maxlength="4"/></div>
-        <div class="admin-field"><label>이름</label><input id="ae-name"/></div>
+        <div class="admin-field" style="flex:0 0 72px"><label>이모지</label><input id="ae-emoji" maxlength="4"/></div>
+        <div class="admin-field" style="flex:1"><label>이름</label><input id="ae-name"/></div>
+        <div class="admin-field" style="flex:1.5"><label>역할 / 직업</label><input id="ae-role"/></div>
       </div>
-      <div class="admin-field"><label>역할 / 직업</label><input id="ae-role"/></div>
-      <div class="admin-field"><label>소개 한마디</label><textarea id="ae-desc"></textarea></div>
-      <div class="admin-field"><label>좋아하는 것 (쉼표로 구분)</label><input id="ae-likes" placeholder="예: 골프, 드라이브, 고기"/></div>
+      <!-- 줄2: 소개 / 좋아하는 것 -->
+      <div class="admin-row">
+        <div class="admin-field" style="flex:1"><label>소개 한마디</label><input id="ae-desc" placeholder="한 줄 소개"/></div>
+        <div class="admin-field" style="flex:1"><label>좋아하는 것 (쉼표로 구분)</label><input id="ae-likes" placeholder="골프, 드라이브, 고기"/></div>
+      </div>
+      <!-- 줄3: 생년월일 + 음력/양력 인라인 -->
       <div class="admin-field">
         <label>생년월일</label>
-        <div class="cal-toggle" style="margin-bottom:6px;">
-          <label class="solar-label"><input type="radio" name="ae-cal" value="solar" checked/> ☀️ 양력</label>
-          <label><input type="radio" name="ae-cal" value="lunar"/> 🌙 음력</label>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="date" id="ae-bday" style="flex:1;min-width:130px;"/>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;">
+            <input type="radio" name="ae-cal" value="solar" checked style="accent-color:#0288D1;width:13px;height:13px;"/> ☀️ 양력
+          </label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;">
+            <input type="radio" name="ae-cal" value="lunar" style="accent-color:#e85d8a;width:13px;height:13px;"/> 🌙 음력
+          </label>
         </div>
-        <input type="date" id="ae-bday"/>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="admin-btn primary" onclick="saveMemberEdit()">💾 저장</button>
@@ -1921,28 +1938,6 @@ document.getElementById('diary-photo-input').addEventListener('change',onDiaryPh
 })();
 function logout(){ if(confirm("로그아웃 할까요?")){ auth.signOut().finally(()=>location.reload()); } }
 
-// ── 모바일: 탭바를 히어로 섹션 바로 아래로 이동 (sticky top:0 효과) ──
-function positionMobileNav(){
-  const sidebar = document.getElementById('left-sidebar');
-  const hero    = document.getElementById('hero-section');
-  const appLayout  = document.getElementById('app-layout');
-  const mainContent = document.getElementById('main-content');
-  if(!sidebar || !hero || !appLayout || !mainContent) return;
-
-  if(window.innerWidth <= 640){
-    // 히어로 바로 뒤에 삽입 (main-content 안)
-    if(sidebar.parentElement !== mainContent){
-      mainContent.insertBefore(sidebar, hero.nextSibling);
-    }
-  } else {
-    // 데스크톱: app-layout의 첫 번째 자식으로 복원
-    if(sidebar.parentElement !== appLayout){
-      appLayout.insertBefore(sidebar, mainContent);
-    }
-  }
-}
-positionMobileNav();
-window.addEventListener('resize', positionMobileNav);
 
 // ── 비밀번호 변경/찾기 UI ──
 function closeMiniModal(id){document.getElementById(id).classList.remove('open');}
