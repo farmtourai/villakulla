@@ -326,6 +326,23 @@ section{padding:60px 24px;max-width:1100px;margin:0 auto;position:relative;z-ind
 .diary-editor:focus{border-color:var(--season-accent);}
 .diary-editor:empty:before{content:attr(data-placeholder);color:var(--muted);}
 .diary-editor img{max-width:280px;width:100%;border-radius:12px;margin:8px 0;display:block;}
+/* 일기 작성: 좌 글 / 우 사진 트레이 */
+.diary-split{display:flex;gap:12px;align-items:flex-start;}
+.diary-split .diary-editor{flex:1;margin-bottom:0;}
+.diary-photo-tray{width:148px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;}
+.diary-photo-tray:empty{display:none;}
+.diary-tray-item{position:relative;border-radius:10px;overflow:hidden;background:var(--season-bg1);}
+.diary-tray-item img{width:100%;display:block;}
+.diary-tray-up{display:flex;align-items:center;justify-content:center;height:90px;font-size:11px;color:var(--muted);}
+.diary-tray-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;}
+/* 일기 카드의 첨부 사진(작게) */
+.diary-card-photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.diary-card-photos img{width:110px;height:110px;object-fit:cover;border-radius:10px;cursor:pointer;}
+@media(max-width:640px){
+  .diary-split{flex-direction:column;}
+  .diary-photo-tray{width:100%;flex-direction:row;flex-wrap:wrap;max-height:none;}
+  .diary-photo-tray .diary-tray-item{width:90px;}
+}
 .diary-tags-row{margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;}
 .diary-tag{background:var(--season-bg1);color:var(--season-accent);font-size:11px;padding:2px 9px;border-radius:20px;}
 .diary-del{position:absolute;top:12px;right:12px;background:none;border:none;color:#ddd;font-size:16px;cursor:pointer;}
@@ -920,21 +937,18 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     background:rgba(253,250,246,0.97);
     backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
     box-shadow:0 2px 14px rgba(0,0,0,0.10);
-    overflow-x:auto;overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-    justify-content:flex-start;
+    overflow-x:hidden;overflow-y:hidden;
+    justify-content:space-between;
     z-index:300;
   }
-  #left-sidebar::-webkit-scrollbar{display:none;}
   .sidebar-logo,.sidebar-divider{display:none;}
   .sidebar-item{
-    flex:0 0 auto;width:auto;min-width:56px;
+    flex:1 1 0;width:auto;min-width:0;
     flex-direction:column;gap:2px;
-    padding:5px 8px 4px;justify-content:center;align-items:center;border-radius:10px;
+    padding:5px 1px 4px;justify-content:flex-start;align-items:center;border-radius:8px;
   }
-  .sidebar-item-label{display:block !important;font-size:10px;line-height:1.2;white-space:nowrap;text-align:center;}
-  .sidebar-item-icon{width:auto;font-size:22px;line-height:1;}
+  .sidebar-item-label{display:block !important;font-size:9px;line-height:1.1;white-space:normal;word-break:keep-all;text-align:center;}
+  .sidebar-item-icon{width:auto;font-size:20px;line-height:1;}
   .sidebar-item.active{box-shadow:0 2px 8px -2px var(--season-accent);}
   #app-layout{display:block;min-height:auto;}
   #main-content{margin:0;min-height:auto;padding-bottom:20px;}
@@ -1259,6 +1273,25 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
       </div>
       <div style="display:flex;justify-content:flex-end;">
         <button class="admin-btn primary" onclick="addAnniversary()" style="width:auto;padding:8px 16px;font-size:13px;">➕ 기념일 추가</button>
+      </div>
+
+      <div class="admin-divider"></div>
+      <div class="admin-section-title">🕊️ 추모일 관리</div>
+      <div class="admin-notice">고인을 기리는 날을 추가하면 우측 패널과 캘린더에 매년 표시돼요.</div>
+      <div id="ac-memo-list" style="margin-bottom:10px;"></div>
+      <div class="admin-row">
+        <div class="admin-field" style="flex:0 0 64px"><label>이모지</label><input id="ac-memo-emoji" placeholder="🕊️" maxlength="4"/></div>
+        <div class="admin-field" style="flex:2"><label>추모일 이름</label><input id="ac-memo-name" placeholder="예: 할아버지 기일"/></div>
+        <div class="admin-field" style="flex:1.4"><label>날짜</label><input type="date" id="ac-memo-date"/></div>
+      </div>
+      <div class="admin-field"><label>양력/음력</label>
+        <div class="cal-toggle" style="margin-bottom:0;">
+          <label class="solar-label"><input type="radio" name="ac-memo-cal" value="solar" checked/> 양력</label>
+          <label><input type="radio" name="ac-memo-cal" value="lunar"/> 음력</label>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="admin-btn primary" onclick="addMemorial()" style="width:auto;padding:8px 16px;font-size:13px;">➕ 추모일 추가</button>
       </div>
     </div>
 
@@ -1621,10 +1654,10 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <div class="divider"></div>
   <p class="section-sub">가족별 폴더에 소중한 순간들을 담아요 📷</p>
   <div class="gallery-folders" id="gallery-folders"></div>
-  <div class="gallery-toolbar">
+  <div class="gallery-grid" id="gallery-grid"></div>
+  <div class="gallery-toolbar" style="margin-top:12px;margin-bottom:0;">
     <button class="gallery-add-sm" onclick="document.getElementById('photo-upload').click()">➕ 사진 추가</button>
   </div>
-  <div class="gallery-grid" id="gallery-grid"></div>
   <input type="file" id="photo-upload" accept="image/*" multiple/>
 </section>
 </div><!-- /page-gallery -->
@@ -1644,20 +1677,22 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <div class="diary-list" id="main-diary-list"></div>
   <div class="diary-write-box" style="margin-top:24px;">
     <div class="diary-write-title" id="diary-write-title">✏️ 새로운 일상 기록하기</div>
-    <div class="diary-write-row" style="margin-bottom:10px;">
-      <input type="text" id="main-diary-title" placeholder="제목" maxlength="40"/>
-      <input type="text" id="main-diary-author" placeholder="작성자 (예: 엄마)" maxlength="12" style="max-width:150px;"/>
-      <input type="text" id="main-diary-tags" placeholder="#태그" maxlength="60" style="max-width:160px;"/>
+    <!-- 한 줄: 제목 / 작성자 / 사진 업로드 -->
+    <div class="diary-write-row" style="margin-bottom:10px;align-items:center;">
+      <input type="text" id="main-diary-title" placeholder="제목" maxlength="40" style="flex:1;"/>
+      <select id="main-diary-author" style="max-width:150px;padding:11px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;background:#fff;outline:none;"><option value="">작성자 선택</option></select>
+      <button type="button" class="diary-tool-btn" onclick="document.getElementById('diary-photo-input').click()">🖼️ 사진 업로드</button>
     </div>
-    <div class="diary-toolbar">
-      <button type="button" class="diary-tool-btn" onclick="insertDiaryPhoto()">🖼️ 사진 삽입</button>
-      <span class="diary-tool-hint">글을 쓰다가 원하는 위치에 커서를 두고 눌러 사진을 넣어요</span>
+    <!-- 좌: 글 입력 / 우: 첨부 사진 -->
+    <div class="diary-split">
+      <div id="main-diary-body" class="diary-editor" contenteditable="true" data-placeholder="오늘 있었던 일을 기록해요... 😊"></div>
+      <div id="diary-photo-tray" class="diary-photo-tray"></div>
     </div>
-    <div id="main-diary-body" class="diary-editor" contenteditable="true" data-placeholder="오늘 있었던 일을 기록해요... 😊"></div>
-    <input type="file" id="diary-photo-input" accept="image/*" style="display:none"/>
+    <input type="file" id="diary-photo-input" accept="image/*" multiple style="display:none"/>
     <input type="hidden" id="main-diary-edit-idx"/>
-    <div style="display:flex;justify-content:flex-end;gap:8px;">
-      <button class="diary-submit" id="diary-submit-btn" onclick="saveMainDiary()">기록 남기기</button>
+    <div class="diary-write-row" style="margin-top:10px;align-items:center;">
+      <input type="text" id="main-diary-tags" placeholder="#태그" maxlength="60" style="flex:1;margin-bottom:0;"/>
+      <button class="diary-submit" id="diary-submit-btn" onclick="saveMainDiary()" style="margin-top:0;">기록 남기기</button>
     </div>
   </div>
 </section>
@@ -1707,7 +1742,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v14 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v15 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -2059,7 +2094,7 @@ function init(){
   [renderGallery,renderMainDiary,renderDdays,renderBuckets,renderHomeBoard,updateStats,
    renderMembersGrid,renderCalendar,renderStory,renderCheerBoards,
    initRoulette,renderMissions,
-   refreshAdminMemberList,renderAdminAnniversaries,renderAdminStories].forEach(fn=>{
+   refreshAdminMemberList,renderAdminAnniversaries,renderAdminMemorials,renderAdminStories].forEach(fn=>{
     try{ fn(); }catch(e){ console.error(fn.name+' 오류:',e); }
   });
   if(d.siteName){
@@ -2161,10 +2196,15 @@ function getAnniversaryItems(){
     {name:"가족 여행",emoji:"✈️",date:"2025-08-15",calType:"solar"}
   ];
 }
+function getMemorialItems(){
+  const d=getS();
+  return d.memorials || [];
+}
 function renderDdays(){
   const byUpcoming = (a,b)=>ddayDiff(a)-ddayDiff(b);
   const bdays = getBirthdayItems().sort(byUpcoming);
   const annis = getAnniversaryItems().sort(byUpcoming);
+  const memos = getMemorialItems().sort(byUpcoming);
   const rowHtml = item=>{
     const isLunar = item.calType === 'lunar';
     const dateLabel = item.date.slice(5).replace('-','/') + (isLunar ? ' <span class="lunar-badge">음력</span>' : '');
@@ -2180,7 +2220,9 @@ function renderDdays(){
     '<div class="dday-group-label">🎂 가족 생일</div>' +
     (bdays.length ? bdays.map(rowHtml).join('') : '<div class="dday-empty">가족 생일 정보가 없어요</div>') +
     '<div class="dday-group-label">🎉 기념일</div>' +
-    (annis.length ? annis.map(rowHtml).join('') : '<div class="dday-empty">관리자에서 기념일을 추가하세요</div>');
+    (annis.length ? annis.map(rowHtml).join('') : '<div class="dday-empty">관리자에서 기념일을 추가하세요</div>') +
+    '<div class="dday-group-label">🕊️ 추모일</div>' +
+    (memos.length ? memos.map(rowHtml).join('') : '<div class="dday-empty">관리자에서 추모일을 추가하세요</div>');
 }
 // 정렬용: 다가오는 일수
 function ddayDiff(item){
@@ -2394,6 +2436,37 @@ function deleteAnniversary(i){
   renderDdays(); renderAdminAnniversaries(); addLog('기념일 삭제');
 }
 
+// ── 추모일 관리 (관리자) ──
+function renderAdminMemorials(){
+  const el=document.getElementById('ac-memo-list');
+  if(!el) return;
+  const memos=getMemorialItems();
+  el.innerHTML = memos.length===0 ? '<p style="color:#aaa;font-size:13px;">추모일이 없어요</p>' :
+    memos.map((a,i)=>{
+      const isLunar=a.calType==='lunar';
+      const dateLabel=a.date.slice(5).replace('-','/')+(isLunar?' (음력)':'');
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f8f8f8;border-radius:8px;margin-bottom:6px;font-size:13px;">
+        <span>${a.emoji} <strong>${a.name}</strong> <span style="color:#aaa;">${dateLabel}</span></span>
+        <button onclick="deleteMemorial(${i})" style="margin-left:auto;background:none;border:none;color:#e05;cursor:pointer;">삭제</button>
+      </div>`;
+    }).join('');
+}
+function addMemorial(){
+  const name=document.getElementById('ac-memo-name').value.trim();
+  const emoji=document.getElementById('ac-memo-emoji').value.trim()||'🕊️';
+  const date=document.getElementById('ac-memo-date').value;
+  const calType=document.querySelector('input[name="ac-memo-cal"]:checked').value;
+  if(!name||!date){alert("추모일 이름과 날짜를 입력해주세요!");return;}
+  const d=getS(); if(!d.memorials)d.memorials=getMemorialItems(); d.memorials.push({name,emoji,date,calType}); setS(d);
+  document.getElementById('ac-memo-name').value=''; document.getElementById('ac-memo-emoji').value=''; document.getElementById('ac-memo-date').value='';
+  renderDdays(); renderAdminMemorials(); addLog('추모일 추가: '+name+(calType==='lunar'?' (음력)':''));
+}
+function deleteMemorial(i){
+  if(!confirm("이 추모일을 삭제할까요?"))return;
+  const d=getS(); const list=getMemorialItems(); list.splice(i,1); d.memorials=list; setS(d);
+  renderDdays(); renderAdminMemorials(); addLog('추모일 삭제');
+}
+
 // ── 버킷리스트 ──
 function renderBuckets(){
   const d=getS(); const list=d.buckets||[];
@@ -2473,6 +2546,15 @@ function renderMembersGrid(){
     card.innerHTML=`${avatar}<div class="member-name">${m.name}</div><div class="member-role">${m.role}</div><div class="member-bday">생일 ${ddayStr}${lunarMark}</div>`;
     card.onclick=()=>openProfile(m); grid.appendChild(card);
   });
+  populateDiaryAuthor();
+}
+// 일기 작성자 선택 옵션을 가족 구성원으로 채움 (현재 선택값 유지)
+function populateDiaryAuthor(){
+  const sel=document.getElementById('main-diary-author'); if(!sel) return;
+  const cur=sel.value;
+  const names=getMembers().map(m=>m.name);
+  sel.innerHTML='<option value="">작성자 선택</option>'+names.map(n=>`<option value="${n}">${n}</option>`).join('')+'<option value="익명">익명</option>';
+  if(cur) sel.value=cur;
 }
 
 // ── 사진첩 (인스타 스타일) ──
@@ -2562,9 +2644,12 @@ function renderMainDiary(){
     const i=diaries.length-1-ri;
     const tags=dd.tags?dd.tags.split(' ').filter(t=>t.startsWith('#')).map(t=>`<span class="diary-tag">${t}</span>`).join(''):'';
     const meta=`<div class="diary-meta">${dd.author?`<span class="diary-author">✍️ ${dd.author}</span>`:''}${dd.date?`<span>${dd.date}</span>`:''}</div>`;
+    const content = (dd.text!==undefined ? dd.text : (dd.body||''));   // 신: text / 구: body(인라인 사진 포함)
+    const photos = (dd.photos||[]);
+    const photosHtml = photos.length ? `<div class="diary-card-photos">${photos.map(p=>`<img src="${p.url}" onclick="window.open('${p.url}','_blank','noopener')"/>`).join('')}</div>` : '';
     return `<div class="diary-card">
       <div class="diary-date"><div class="diary-day">${dd.day}</div><div class="diary-month">${dd.month}</div></div>
-      <div style="flex:1"><div class="diary-title">${dd.title}</div>${meta}<div class="diary-body-text">${dd.body}</div>${tags?`<div class="diary-tags-row">${tags}</div>`:''}</div>
+      <div style="flex:1;min-width:0;"><div class="diary-title">${dd.title}</div>${meta}<div class="diary-body-text">${content}</div>${photosHtml}${tags?`<div class="diary-tags-row">${tags}</div>`:''}</div>
       <div style="position:absolute;top:12px;right:12px;display:flex;gap:4px;">
         <button class="diary-edit" onclick="editMainDiary(${i})" title="수정" style="background:none;border:none;color:#bbb;font-size:14px;cursor:pointer;">✏️</button>
         <button class="diary-del" onclick="deleteMainDiary(${i})" title="삭제" style="position:static;">✕</button>
@@ -2575,32 +2660,33 @@ function renderMainDiary(){
 }
 function saveMainDiary(){
   const title=document.getElementById('main-diary-title').value.trim();
-  const author=document.getElementById('main-diary-author').value.trim()||'익명';
+  const author=document.getElementById('main-diary-author').value||'익명';
   const editor=document.getElementById('main-diary-body');
-  const body=editor.innerHTML.trim();
+  const text=editor.innerHTML.trim();
   const hasText=editor.textContent.trim().length>0;
-  const hasImg=editor.querySelector('img')!=null;
   const tags=document.getElementById('main-diary-tags').value.trim();
   const editIdxRaw=document.getElementById('main-diary-edit-idx').value;
-  if(!title||(!hasText&&!hasImg)){alert("제목과 내용을 입력해주세요!");return;}
-  if(editor.querySelector('img[data-uploading]')){alert("사진 업로드가 끝날 때까지 잠시만 기다려주세요. ⏳");return;}
+  if(!title||(!hasText && !_diaryPhotos.length)){alert("제목과 내용(글 또는 사진)을 입력해주세요!");return;}
+  if(_diaryPhotos.some(p=>p.uploading)){alert("사진 업로드가 끝날 때까지 잠시만 기다려주세요. ⏳");return;}
+  const photos=_diaryPhotos.map(p=>({url:p.url, path:p.path}));
   const d=getS(); if(!d.mainDiaries)d.mainDiaries=[];
   let logMsg;
   if(editIdxRaw!==''){
     const idx=parseInt(editIdxRaw); const old=d.mainDiaries[idx];
-    if(old){ d.mainDiaries[idx]={...old, title, author, body, tags}; }
+    if(old){ d.mainDiaries[idx]={...old, title, author, text, photos, tags, body:undefined}; }
     logMsg='일기 수정: '+title;
   } else {
     const now=new Date();
-    d.mainDiaries.push({title,author,body,tags,day:now.getDate(),month:(now.getMonth()+1)+'월',date:now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'})});
+    d.mainDiaries.push({title,author,text,photos,tags,day:now.getDate(),month:(now.getMonth()+1)+'월',date:now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'})});
     logMsg='일기 작성: '+title;
   }
   try{ setS(d); }
-  catch(err){ alert('사진 용량이 커서 저장하지 못했어요. 사진 수를 줄여주세요. 🙏'); return; }
+  catch(err){ alert('저장하지 못했어요. 🙏'); return; }
   document.getElementById('main-diary-title').value='';
   document.getElementById('main-diary-author').value='';
   document.getElementById('main-diary-tags').value='';
   editor.innerHTML='';
+  _diaryPhotos=[]; renderDiaryTray();
   document.getElementById('main-diary-edit-idx').value='';
   document.getElementById('diary-submit-btn').textContent='기록 남기기';
   document.getElementById('diary-write-title').textContent='✏️ 새로운 일상 기록하기';
@@ -2611,7 +2697,8 @@ function editMainDiary(i){
   document.getElementById('main-diary-title').value=dd.title||'';
   document.getElementById('main-diary-author').value=dd.author||'';
   document.getElementById('main-diary-tags').value=dd.tags||'';
-  document.getElementById('main-diary-body').innerHTML=dd.body||'';
+  document.getElementById('main-diary-body').innerHTML=(dd.text!==undefined?dd.text:(dd.body||''));
+  _diaryPhotos=(dd.photos||[]).map(p=>({url:p.url, path:p.path})); renderDiaryTray();
   document.getElementById('main-diary-edit-idx').value=String(i);
   document.getElementById('diary-submit-btn').textContent='💾 수정 완료';
   document.getElementById('diary-write-title').textContent='✏️ 일상 기록 수정';
@@ -2625,50 +2712,47 @@ function cleanupDiaryPhotos(html){
     tmp.querySelectorAll('img[data-path]').forEach(im=>{ const p=im.getAttribute('data-path'); if(p) deletePhotoFile(p); });
   }catch(_){}
 }
-function deleteMainDiary(i){if(!confirm("삭제?"))return;const d=getS();const removed=d.mainDiaries.splice(i,1)[0];setS(d);if(removed)cleanupDiaryPhotos(removed.body);renderMainDiary();addLog('일기 삭제');}
-
-// 일기 본문에 사진 삽입 (커서 위치)
-let _diaryRange=null;
-function saveDiaryRange(){
-  const editor=document.getElementById('main-diary-body');
-  const sel=window.getSelection();
-  if(sel && sel.rangeCount && editor && editor.contains(sel.anchorNode)) _diaryRange=sel.getRangeAt(0).cloneRange();
+function deleteMainDiary(i){
+  if(!confirm("삭제?"))return;
+  const d=getS();const removed=d.mainDiaries.splice(i,1)[0];setS(d);
+  if(removed){
+    cleanupDiaryPhotos(removed.body);                                  // 구버전 인라인 사진
+    (removed.photos||[]).forEach(p=>{ if(p.path) deletePhotoFile(p.path); });  // 신버전 트레이 사진
+  }
+  renderMainDiary();addLog('일기 삭제');
 }
-function insertDiaryPhoto(){
-  saveDiaryRange();
-  document.getElementById('diary-photo-input').click();
+
+// 일기 첨부 사진(우측 트레이) — 본문과 분리 저장
+let _diaryPhotos=[];
+function saveDiaryRange(){}   // (구버전 인라인 삽입 잔재 — 이벤트 리스너 호환용 no-op)
+function renderDiaryTray(){
+  const tray=document.getElementById('diary-photo-tray'); if(!tray) return;
+  tray.innerHTML=_diaryPhotos.map((p,i)=>`<div class="diary-tray-item">
+    ${p.uploading?`<div class="diary-tray-up">⏳ 업로드중…</div>`:`<img src="${p.url}"/>`}
+    <button class="diary-tray-del" onclick="removeDiaryPhoto(${i})">✕</button>
+  </div>`).join('');
+}
+function removeDiaryPhoto(i){
+  const p=_diaryPhotos[i];
+  if(p && p.path) deletePhotoFile(p.path);
+  _diaryPhotos.splice(i,1); renderDiaryTray();
 }
 async function onDiaryPhotoSelected(e){
-  const file=e.target.files&&e.target.files[0]; e.target.value='';
-  if(!file) return;
-  const editor=document.getElementById('main-diary-body');
-  // 압축본을 즉시 미리보기로 삽입 (업로드 중에는 흐리게 표시)
-  let preview;
-  try{ preview=await fileToCompressedDataUrl(file, 1000, 0.78); }
-  catch(_){ alert('이미지를 읽을 수 없어요. 🙏'); return; }
-  const img=document.createElement('img'); img.src=preview;
-  img.setAttribute('data-uploading','1'); img.style.opacity='0.45';
-  editor.focus();
-  const sel=window.getSelection();
-  if(_diaryRange && editor.contains(_diaryRange.commonAncestorContainer)){
-    sel.removeAllRanges(); sel.addRange(_diaryRange);
-    _diaryRange.collapse(false);
-    _diaryRange.insertNode(img);
-    _diaryRange.setStartAfter(img); _diaryRange.collapse(true);
-    sel.removeAllRanges(); sel.addRange(_diaryRange);
-  } else {
-    editor.appendChild(img);
-  }
-  saveDiaryRange();
-  // Storage 업로드 후 다운로드 URL로 교체 (본문엔 base64 대신 URL만 저장)
-  try{
-    const up=await uploadPhoto(preview, 'diary');
-    img.src=up.url;
-    img.setAttribute('data-path', up.path);
-    img.removeAttribute('data-uploading'); img.style.opacity='';
-  }catch(err){
-    img.remove();
-    alert('사진 업로드에 실패했어요. 다시 시도해주세요. 🙏');
+  const files=Array.from(e.target.files||[]); e.target.value='';
+  for(const file of files){
+    let preview;
+    try{ preview=await fileToCompressedDataUrl(file, 1000, 0.78); }
+    catch(_){ continue; }
+    const item={url:preview, uploading:true};
+    _diaryPhotos.push(item); renderDiaryTray();
+    try{
+      const up=await uploadPhoto(preview, 'diary');
+      item.url=up.url; item.path=up.path; item.uploading=false;
+    }catch(err){
+      const idx=_diaryPhotos.indexOf(item); if(idx>=0)_diaryPhotos.splice(idx,1);
+      alert('사진 업로드에 실패했어요. 🙏');
+    }
+    renderDiaryTray();
   }
 }
 
@@ -3150,7 +3234,8 @@ function specialEventsByKey(years){
   const map={};
   const items=[
     ...getBirthdayItems().map(it=>({name:it.name, emoji:it.emoji||'🎂', date:it.date, calType:it.calType, color:'#E85D8A', kind:'bday'})),
-    ...getAnniversaryItems().map(it=>({name:it.name, emoji:it.emoji||'🎉', date:it.date, calType:it.calType, color:'#F57C00', kind:'anniv'}))
+    ...getAnniversaryItems().map(it=>({name:it.name, emoji:it.emoji||'🎉', date:it.date, calType:it.calType, color:'#F57C00', kind:'anniv'})),
+    ...getMemorialItems().map(it=>({name:it.name, emoji:it.emoji||'🕊️', date:it.date, calType:it.calType, color:'#607D8B', kind:'memorial'}))
   ];
   years.forEach(year=>{
     items.forEach(it=>{
@@ -3282,7 +3367,7 @@ function renderDayEvents(key){
       <div class="ev-emoji">${ev.emoji||'🎉'}</div>
       <div class="ev-body">
         <div class="ev-title">${ev.title}</div>
-        <div class="ev-time">${ev.kind==='bday'?'🎂 생일':'🎉 기념일'} · 매년</div>
+        <div class="ev-time">${ev.kind==='bday'?'🎂 생일':ev.kind==='memorial'?'🕊️ 추모일':'🎉 기념일'} · 매년</div>
       </div>
     </div>`).join('');
   const eventHtml = events.map((ev,i) => {
@@ -3493,7 +3578,8 @@ function spinRoulette(){
     if(t<1){ requestAnimationFrame(frame); return; }
     // 결과 계산
     const slice=(Math.PI*2)/items.length;
-    const norm = (((-rouletteAngle % (Math.PI*2)) + Math.PI*2 + Math.PI/2) % (Math.PI*2));
+    // 포인터(▼)는 맨 위(12시). 그 위치의 조각 = floor((-각도) / 조각각)
+    const norm = (((-rouletteAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2));
     const winner = Math.floor(norm/slice) % items.length;
     drawRoulette(winner);
     document.getElementById('roulette-result').innerHTML = `🎉 <strong>${items[winner]}</strong>`;
