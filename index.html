@@ -939,6 +939,25 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 .story-era-btn:hover{background:var(--season-bg1);transform:translateY(-1px);}
 .story-era-btn.active{background:var(--season-accent);color:#fff;box-shadow:0 4px 12px -3px var(--season-accent);}
 .story-era-empty{font-size:11px;opacity:0.6;}
+/* 가족 스토리 한 줄 목록 */
+.story-list{display:flex;flex-direction:column;gap:12px;max-width:780px;margin:0 auto 8px;}
+.story-row{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:12px 16px;border-left:4px solid var(--season-accent);}
+.story-row-actions{display:flex;gap:6px;justify-content:flex-end;margin-bottom:8px;}
+.story-row-actions button{font-size:11px;padding:3px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit;transition:all 0.18s;}
+.story-row-actions button:hover{border-color:var(--season-accent);color:var(--season-accent);}
+.story-row-actions button.del:hover{border-color:#e05;color:#e05;}
+.story-row-line{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13px;line-height:1.5;}
+.story-row-date{color:var(--season-accent);font-weight:700;white-space:nowrap;}
+.story-row-emoji{font-size:16px;}
+.story-row-title{font-weight:700;color:#1a1a1a;}
+.story-row-desc{color:#666;flex:1;min-width:140px;}
+/* 홈 위젯 안의 미션은 컴팩트하게 */
+.home-widgets-col .mission-grid{grid-template-columns:1fr;gap:8px;margin-bottom:0;}
+.home-widgets-col .mission-card{padding:12px 14px;}
+.home-widgets-col .mission-emoji{font-size:26px;margin-bottom:6px;}
+.home-widgets-col .mission-title{font-size:13px;}
+.home-widgets-col .mission-desc{font-size:11px;}
+.home-widgets-col .mission-date-badge{margin-bottom:10px;}
 </style>
 </head>
 <body class="spring">
@@ -1303,10 +1322,6 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <span class="sidebar-item-icon">📓</span>
     <span class="sidebar-item-label">일상 기록</span>
   </button>
-  <button class="sidebar-item" onclick="showPage('mission')" data-page="mission">
-    <span class="sidebar-item-icon">🎯</span>
-    <span class="sidebar-item-label">오늘의 미션</span>
-  </button>
   <button class="sidebar-item" onclick="showPage('roulette')" data-page="roulette">
     <span class="sidebar-item-icon">🎰</span>
     <span class="sidebar-item-label">가족 룰렛</span>
@@ -1326,19 +1341,11 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <!-- 우측 1/4: 위젯 세로 -->
   <div class="home-widgets-col">
     <div class="widget">
-      <div class="widget-label">🌤 오늘의 날씨</div>
-      <div class="weather-main">
-        <div class="weather-emoji" id="w-emoji">⛅</div>
-        <div>
-          <div class="weather-temp" id="w-temp">--°C</div>
-          <div class="weather-desc" id="w-desc">날씨 불러오는 중...</div>
-          <div class="weather-city" id="w-city">📍 위치 확인 중</div>
-        </div>
-      </div>
-      <div class="weather-extra">
-        <div class="weather-ex-item"><strong id="w-feels">--°</strong>체감온도</div>
-        <div class="weather-ex-item"><strong id="w-humidity">--%</strong>습도</div>
-        <div class="weather-ex-item"><strong id="w-wind">--m/s</strong>바람</div>
+      <div class="widget-label">🎯 오늘의 미션</div>
+      <div class="mission-date-badge" id="mission-date-badge" style="margin-bottom:12px;">📅 오늘의 미션</div>
+      <div class="mission-grid" id="mission-grid"></div>
+      <div style="text-align:center;margin-top:10px;">
+        <button class="mission-refresh-btn" onclick="refreshMissions()">🔀 미션 새로고침</button>
       </div>
     </div>
     <div class="widget">
@@ -1502,13 +1509,12 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <div class="divider"></div>
   <p class="section-sub">우리 가족의 소중한 역사를 기록해요 ✨</p>
   <div class="story-eras" id="story-eras"></div>
-  <div class="timeline" id="timeline-list"></div>
+  <div class="story-list" id="timeline-list"></div>
 
-  <!-- 👑 관리자 전용: 스토리 추가 -->
-  <div class="admin-box admin-only" style="max-width:560px;margin-left:auto;margin-right:auto;">
+  <!-- 👑 관리자 전용: 스토리 추가/수정 (목록은 표시 안 함) -->
+  <div class="admin-box admin-only" id="story-admin-box" style="max-width:560px;margin-left:auto;margin-right:auto;">
     <span class="admin-box-tag">👑 관리자 편집</span>
-    <div class="admin-section-title">📖 가족 스토리 관리</div>
-    <div id="ac-story-list" style="margin-bottom:12px;"></div>
+    <div class="admin-section-title">📖 가족 스토리 추가 / 수정</div>
     <!-- 줄1: 이모지 / 제목 / 날짜 -->
     <div class="admin-row">
       <div class="admin-field" style="flex:0 0 64px"><label>이모지</label><input id="ac-story-emoji" placeholder="🎉" maxlength="4"/></div>
@@ -1518,7 +1524,9 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <!-- 줄2: 내용 -->
     <div class="admin-field"><label>내용</label><textarea id="ac-story-desc" placeholder="이날의 이야기를 적어주세요..." maxlength="150" style="height:64px;"></textarea></div>
     <input type="hidden" id="ac-story-edit-id"/>
-    <button class="admin-btn primary" id="ac-story-submit-btn" onclick="saveStory()" style="width:100%;">➕ 스토리 추가</button>
+    <div style="display:flex;justify-content:flex-end;">
+      <button class="admin-btn primary" id="ac-story-submit-btn" onclick="saveStory()" style="width:auto;padding:8px 16px;font-size:13px;">➕ 스토리 추가</button>
+    </div>
   </div>
 </section>
 </div><!-- /page-story -->
@@ -1635,21 +1643,6 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 </section>
 </div><!-- /page-roulette -->
 
-<div id="page-mission" class="page-section">
-<!-- 🎯 오늘의 가족 미션 -->
-<section id="mission">
-  <div class="section-title">🎯 오늘의 가족 미션</div>
-  <div class="divider"></div>
-  <p class="section-sub">오늘 하루, 가족과 함께 미션을 완료해보세요! ✅</p>
-  <div style="text-align:center;margin-bottom:20px;">
-    <div class="mission-date-badge" id="mission-date-badge">📅 오늘의 미션</div>
-  </div>
-  <div class="mission-grid" id="mission-grid"></div>
-  <div style="text-align:center;">
-    <button class="mission-refresh-btn" onclick="refreshMissions()">🔀 미션 새로고침</button>
-  </div>
-</section>
-</div><!-- /page-mission -->
 
 </div><!-- /main-content -->
 
@@ -1684,7 +1677,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v10 · 2026-06-22</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v11 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -2047,6 +2040,7 @@ function init(){
 
 // ── 날씨 ──
 function loadWeather(){
+  if(!document.getElementById('w-emoji')) return;   // 날씨 위젯 제거됨
   if(!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(pos=>{
     const{latitude:lat,longitude:lon}=pos.coords;
@@ -3560,18 +3554,23 @@ function storyDateLabel(s){
   return `${y}년 ${parseInt(m)}월 ${parseInt(dd)}일`;
 }
 
-// ── 연도 구간(에라) 분할: 2010년 이전 + 이후 5년 단위 ──
+// ── 연도 구간(에라) 분할: 2020 이전 / 2021-2024 / 이후 매년 ──
 let _storyEra = null;   // 현재 선택된 구간 key
 function storyEraKey(year){
-  if(!year || year < 2010) return 'pre2010';
-  return String(2010 + Math.floor((year-2010)/5)*5);   // 2010,2015,2020,2025...
+  if(!year || year <= 2020) return 'pre2020';
+  if(year <= 2024) return '2021';     // 2021-2024 묶음
+  return String(year);                // 2025부터 매년
 }
 function storyEraLabel(key){
-  if(key==='pre2010') return '2010년 이전';
-  const bs=parseInt(key), cy=new Date().getFullYear();
-  return (bs+4 >= cy) ? (bs+'~현재') : (bs+'-'+(bs+4));
+  if(key==='pre2020') return '2020 이전';
+  if(key==='2021') return '2021-2024';
+  return key+'년';
 }
-function storyEraSort(key){ return key==='pre2010' ? 0 : parseInt(key); }
+function storyEraSort(key){
+  if(key==='pre2020') return 0;
+  if(key==='2021') return 1;
+  return parseInt(key);
+}
 function switchStoryEra(key){ _storyEra=key; renderStory(); }
 
 function renderStory(){
@@ -3596,20 +3595,19 @@ function renderStory(){
       `<button class="story-era-btn${k===_storyEra?' active':''}" onclick="switchStoryEra('${k}')">${storyEraLabel(k)} <span class="story-era-empty">(${groups[k].length})</span></button>`
     ).join('');
   }
-  // 선택 구간의 스토리만 타임라인에 표시 (오래된→최신)
+  // 한 줄 표시(날짜·이모지·제목·내용) + 그 위에 수정/삭제(관리자만)
   el.innerHTML = (groups[_storyEra]||[]).map(s=>`
-    <div class="tl-item">
-      <div class="tl-content">
-        <div class="tl-year">${storyDateLabel(s)}</div>
-        <div class="tl-title">${s.emoji||'📌'} ${s.title}</div>
-        <div class="tl-desc">${s.desc||''}</div>
-        ${isAdmin?`<div style="display:flex;gap:6px;margin-top:10px;">
-          <button onclick="editStory('${s.id}')" style="padding:4px 12px;background:var(--season-bg1);color:var(--season-accent);border:1px solid var(--season-accent);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 수정</button>
-          <button onclick="deleteStory('${s.id}')" style="padding:4px 12px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">🗑 삭제</button>
-        </div>`:''}
+    <div class="story-row">
+      ${isAdmin?`<div class="story-row-actions">
+        <button onclick="editStory('${s.id}')">✏️ 수정</button>
+        <button class="del" onclick="deleteStory('${s.id}')">🗑 삭제</button>
+      </div>`:''}
+      <div class="story-row-line">
+        <span class="story-row-date">${storyDateLabel(s)}</span>
+        <span class="story-row-emoji">${s.emoji||'📌'}</span>
+        <span class="story-row-title">${s.title}</span>
+        ${s.desc?`<span class="story-row-desc">${s.desc}</span>`:''}
       </div>
-      <div class="tl-dot">${s.emoji||'📌'}</div>
-      <div style="width:calc(50% - 40px)"></div>
     </div>
   `).join('');
 }
