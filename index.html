@@ -14,19 +14,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap');
 
 :root {
-  --season-bg1:#FFF8F0; --season-bg2:#FFF0E8;
-  --season-hero1:#FF9A8B; --season-hero2:#FF6B9D; --season-hero3:#C44FAA;
-  --season-accent:#E85D8A; --season-accent2:#FF9A8B; --season-leaf:#FFB347;
-  --bg:#FDFAF6; --card:#FFFFFF; --text:#2C2C2C; --muted:#999;
-  --border:#EDE8E0; --shadow:0 4px 24px rgba(0,0,0,0.07); --radius:20px;
+  --season-bg1:#FFF1F7; --season-bg2:#FBE9FF;
+  --season-hero1:#FF8FB1; --season-hero2:#FF4D8D; --season-hero3:#9D5CFF;
+  --season-accent:#FF4D8D; --season-accent2:#FFB0D0; --season-leaf:#FFB347;
+  --bg:#FBFAFF; --card:#FFFFFF; --text:#1E1B2E; --muted:#9893A6;
+  --border:#ECE9F3; --shadow:0 8px 30px rgba(80,40,120,0.10); --radius:22px;
 }
-body.spring{--season-bg1:#FFF0F5;--season-bg2:#FFE4EE;--season-hero1:#FF9ABB;--season-hero2:#FF6B9D;--season-hero3:#C44FAA;--season-accent:#E85D8A;--season-accent2:#FFB3CC;}
-body.summer{--season-bg1:#F0F8FF;--season-bg2:#E0F4FF;--season-hero1:#4FC3F7;--season-hero2:#0288D1;--season-hero3:#01579B;--season-accent:#0288D1;--season-accent2:#80DEEA;}
-body.autumn{--season-bg1:#FFF8F0;--season-bg2:#FFF0E0;--season-hero1:#FF8A50;--season-hero2:#E64A19;--season-hero3:#BF360C;--season-accent:#E64A19;--season-accent2:#FFAB40;}
-body.winter{--season-bg1:#F0F4FF;--season-bg2:#E8EEFF;--season-hero1:#90CAF9;--season-hero2:#5C6BC0;--season-hero3:#283593;--season-accent:#5C6BC0;--season-accent2:#B0BEC5;}
+/* 🌸 봄 — 코랄핑크 × 라일락 (밝고 발랄) */
+body.spring{--season-bg1:#FFF1F7;--season-bg2:#F4E9FF;--season-hero1:#FF8FB1;--season-hero2:#FF4D8D;--season-hero3:#9D5CFF;--season-accent:#FF4D8D;--season-accent2:#FFB0D0;}
+/* 🌊 여름 — 일렉트릭 아쿠아 × 인디고 (시원·청량) */
+body.summer{--season-bg1:#ECFEFF;--season-bg2:#E4EDFF;--season-hero1:#2DD4E8;--season-hero2:#0EA5E9;--season-hero3:#6366F1;--season-accent:#06B6D4;--season-accent2:#7DE9F5;}
+/* 🍁 가을 — 선셋 앰버 × 로즈 (따뜻·세련) */
+body.autumn{--season-bg1:#FFF6ED;--season-bg2:#FFE9E4;--season-hero1:#FFB066;--season-hero2:#FB7330;--season-hero3:#E03E6A;--season-accent:#F2622E;--season-accent2:#FFC182;}
+/* ❄️ 겨울 — 아이시 바이올렛 × 인디고 (차분·모던) */
+body.winter{--season-bg1:#F3F2FF;--season-bg2:#E9EAFF;--season-hero1:#8FA0FF;--season-hero2:#6366F1;--season-hero3:#4338CA;--season-accent:#6D6AF0;--season-accent2:#B8C0FF;}
 
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background 1s ease;}
+body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(165deg,var(--season-bg1) 0%,var(--season-bg2) 100%) fixed;color:var(--text);min-height:100vh;transition:background 1s ease;}
 
 /* ── 로그인 ── */
 #login-overlay{
@@ -464,8 +468,14 @@ body.is-admin .admin-only{display:block;}
 .hero-edit-block{background:#f7f8ff;border:1px solid #e6e8fb;border-radius:12px;padding:8px 12px;margin-bottom:8px;}
 .hero-edit-head{font-size:12px;font-weight:700;color:#667eea;margin-bottom:5px;}
 .hero-edit-block input[type=text],.hero-edit-block>input{width:100%;padding:6px 10px;border:1.5px solid #e8e8e8;border-radius:9px;font-size:13px;font-family:inherit;background:#fff;outline:none;margin-bottom:5px;}
-.hero-edit-block .admin-row{margin-bottom:0;}
-.hero-edit-block .admin-field label{margin-bottom:2px;}
+.hero-edit-block .admin-row{margin-bottom:0;gap:6px;}
+.hero-edit-block .admin-field label{margin-bottom:1px;font-size:10px;}
+/* 칸 높이 대폭 축소: 좌우/상하 위치 슬라이더 행 숨김 + 컨트롤 압축 */
+.hero-edit-block .admin-row:has(input[type=range]){display:none;}
+.hero-edit-block input[type=number],.hero-edit-block select{padding:4px 8px !important;font-size:12px;}
+.hero-edit-block .hero-color{height:26px;}
+.hero-edit-block input[type=text]{padding:5px 10px;margin-bottom:4px;}
+.hero-edit-head{font-size:11px;margin-bottom:3px;}
 .hero-color{height:34px;padding:2px 3px;width:100%;border:1.5px solid #e8e8e8;border-radius:8px;background:#fff;cursor:pointer;}
 .hero-edit-block input[type=range]{width:100%;}
 .admin-notice{background:#fff8e1;border-left:3px solid #ffc107;padding:10px 14px;border-radius:8px;font-size:12px;color:#856404;margin-bottom:14px;}
@@ -956,6 +966,24 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   #main-content{margin:0;min-height:auto;padding-bottom:20px;}
   #dday-rail{margin:0 14px 14px;}
   footer{padding-bottom:20px;}
+}
+/* 📱 가로 모드 휴대폰: 좌측 메뉴바를 상단 가로바로(스크롤 시 연속 고정, 잘림 방지) */
+@media (orientation:landscape) and (max-height:500px){
+  #app-layout{display:block;min-height:auto;}
+  #left-sidebar{
+    position:sticky;top:0;bottom:auto;left:auto;
+    width:100%;height:auto;max-height:none;flex-direction:row;flex-wrap:nowrap;align-self:auto;
+    padding:5px 6px;gap:3px;
+    border-right:none;border-bottom:1px solid var(--border);border-top:none;
+    background:rgba(253,250,246,0.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    box-shadow:0 2px 14px rgba(0,0,0,0.10);
+    overflow-x:hidden;overflow-y:hidden;justify-content:space-between;z-index:300;
+  }
+  #left-sidebar .sidebar-item{flex:1 1 0;width:auto;min-width:0;flex-direction:column;gap:2px;padding:4px 1px;justify-content:center;align-items:center;border-radius:8px;}
+  #left-sidebar .sidebar-item-label{display:block !important;font-size:9px;line-height:1.1;white-space:normal;word-break:keep-all;text-align:center;}
+  #left-sidebar .sidebar-item-icon{width:auto;font-size:18px;}
+  #main-content{margin:0;min-height:auto;}
+  #dday-rail{margin:0 14px 14px;}
 }
 /* 가족 스토리 연도 구간 탭 */
 .story-eras{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 26px;}
@@ -1730,7 +1758,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v16 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v17 · 2026-06-23</span>
 </footer>
 
 <script>
