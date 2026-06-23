@@ -270,6 +270,8 @@ section{padding:60px 24px;max-width:1100px;margin:0 auto;position:relative;z-ind
 .member-card:hover{transform:translateY(-7px);box-shadow:0 16px 40px rgba(0,0,0,0.13);border-color:var(--season-accent);}
 .member-card:hover::before{opacity:1;}
 .member-emoji{font-size:38px;margin-bottom:8px;position:relative;z-index:1;}
+.member-avatar{width:58px;height:58px;border-radius:50%;overflow:hidden;margin:0 auto 8px;box-shadow:0 2px 8px rgba(0,0,0,0.12);}
+.member-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
 .member-name{font-weight:700;font-size:14px;margin-bottom:2px;position:relative;z-index:1;}
 .member-role{color:var(--muted);font-size:10px;line-height:1.3;position:relative;z-index:1;}
 .member-bday{font-size:9px;color:var(--season-accent);margin-top:5px;position:relative;z-index:1;}
@@ -1391,32 +1393,41 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <div class="admin-member-list" id="admin-member-list"></div>
     <div class="admin-member-edit" id="admin-member-edit" style="display:none">
       <div class="admin-member-edit-title" id="admin-edit-title">✏️ 편집 중</div>
-      <!-- 줄1: 이모지 / 이름 / 생년월일(음력/양력) / 역할 -->
+      <!-- 줄1: 사진 / 이름 / 생년월일(옆에 양력·음력 세로) / 역할 -->
       <div class="admin-row" style="align-items:flex-end;">
-        <div class="admin-field" style="flex:0 0 64px"><label>이모지</label><input id="ae-emoji" maxlength="4"/></div>
-        <div class="admin-field" style="flex:1"><label>이름</label><input id="ae-name"/></div>
-        <div class="admin-field" style="flex:1.4">
-          <label>생년월일</label>
-          <input type="date" id="ae-bday" style="width:100%;"/>
-          <div style="display:flex;gap:10px;margin-top:4px;">
-            <label style="display:flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#888;cursor:pointer;">
-              <input type="radio" name="ae-cal" value="solar" checked style="accent-color:#0288D1;width:12px;height:12px;"/> ☀️양력
-            </label>
-            <label style="display:flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#888;cursor:pointer;">
-              <input type="radio" name="ae-cal" value="lunar" style="accent-color:#e85d8a;width:12px;height:12px;"/> 🌙음력
-            </label>
+        <div class="admin-field" style="flex:0 0 auto;">
+          <label>사진</label>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div id="ae-avatar-preview" onclick="document.getElementById('ae-photo-input').click()" title="클릭해서 사진 업로드" style="width:46px;height:46px;border-radius:50%;background:var(--season-bg1);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;overflow:hidden;border:1.5px solid var(--border);flex-shrink:0;">🙂</div>
+            <input type="file" id="ae-photo-input" accept="image/*" style="display:none"/>
+            <input id="ae-emoji" maxlength="4" placeholder="🙂" title="사진이 없을 때 쓰는 이모지" style="width:42px;text-align:center;"/>
           </div>
         </div>
-        <div class="admin-field" style="flex:1.4"><label>역할 / 직업</label><input id="ae-role"/></div>
+        <div class="admin-field" style="flex:1"><label>이름</label><input id="ae-name"/></div>
+        <div class="admin-field" style="flex:1.6">
+          <label>생년월일</label>
+          <div style="display:flex;gap:8px;align-items:stretch;">
+            <input type="date" id="ae-bday" style="flex:1;"/>
+            <div style="display:flex;flex-direction:column;gap:3px;justify-content:center;">
+              <label style="display:flex;align-items:center;gap:2px;font-size:9.5px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;">
+                <input type="radio" name="ae-cal" value="solar" checked style="accent-color:#0288D1;width:11px;height:11px;"/>☀️양력
+              </label>
+              <label style="display:flex;align-items:center;gap:2px;font-size:9.5px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;">
+                <input type="radio" name="ae-cal" value="lunar" style="accent-color:#e85d8a;width:11px;height:11px;"/>🌙음력
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="admin-field" style="flex:1.2"><label>역할 / 직업</label><input id="ae-role"/></div>
       </div>
       <!-- 줄2: 소개 / 좋아하는 것 -->
       <div class="admin-row">
         <div class="admin-field" style="flex:1"><label>소개 한마디</label><input id="ae-desc" placeholder="한 줄 소개"/></div>
         <div class="admin-field" style="flex:1"><label>좋아하는 것 (쉼표로 구분)</label><input id="ae-likes" placeholder="골프, 드라이브, 고기"/></div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="admin-btn primary" onclick="saveMemberEdit()">💾 저장</button>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button class="admin-btn secondary" onclick="cancelMemberEdit()">취소</button>
+        <button class="admin-btn primary" onclick="saveMemberEdit()">💾 저장</button>
       </div>
     </div>
   </div>
@@ -1684,7 +1695,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v12 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v13 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -2446,7 +2457,8 @@ function renderMembersGrid(){
     const ddayStr = calcBdayDday(m);
     const lunarMark = m.bdayType==='lunar' ? ' <span class="lunar-badge">음력</span>' : '';
     const card=document.createElement('div'); card.className='member-card';
-    card.innerHTML=`<div class="member-emoji">${m.emoji}</div><div class="member-name">${m.name}</div><div class="member-role">${m.role}</div><div class="member-bday">생일 ${ddayStr}${lunarMark}</div>`;
+    const avatar = (m.photo&&m.photo.url) ? `<div class="member-emoji member-avatar"><img src="${m.photo.url}"/></div>` : `<div class="member-emoji">${m.emoji}</div>`;
+    card.innerHTML=`${avatar}<div class="member-name">${m.name}</div><div class="member-role">${m.role}</div><div class="member-bday">생일 ${ddayStr}${lunarMark}</div>`;
     card.onclick=()=>openProfile(m); grid.appendChild(card);
   });
 }
@@ -2634,7 +2646,7 @@ function updateStats(){
 let curMember=null;
 function openProfile(m){
   curMember=m;
-  document.getElementById('modal-emoji').textContent=m.emoji;
+  document.getElementById('modal-emoji').innerHTML=(m.photo&&m.photo.url)?`<img src="${m.photo.url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:m.emoji;
   document.getElementById('modal-name').textContent=m.name;
   document.getElementById('modal-role').textContent=m.role;
   document.getElementById('intro-desc').textContent=m.desc;
@@ -2755,10 +2767,19 @@ function refreshAdminMemberList(){
   const members=getMembers();
   document.getElementById('admin-member-list').innerHTML=members.map((m,i)=>`
     <div class="admin-member-item${selectedMemberIdx===i?' selected':''}" onclick="selectAdminMember(${i})">
-      <div class="am-emoji">${m.emoji}</div>
+      <div class="am-emoji">${(m.photo&&m.photo.url)?`<img src="${m.photo.url}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;display:block;"/>`:m.emoji}</div>
       <div class="am-info"><div class="am-name">${m.name}</div><div class="am-role">${m.role}</div></div>
       <div style="font-size:12px;color:#aaa;">▶</div>
     </div>`).join('');
+}
+let _aePhoto=null;   // 편집 중인 구성원 사진 {url,path}
+function updateAeAvatar(){
+  const el=document.getElementById('ae-avatar-preview'); if(!el) return;
+  if(_aePhoto && _aePhoto.url){
+    el.innerHTML=`<img src="${_aePhoto.url}" style="width:100%;height:100%;object-fit:cover;"/>`;
+  } else {
+    el.textContent = (document.getElementById('ae-emoji').value||'🙂');
+  }
 }
 function selectAdminMember(i){
   const m=getMembers()[i];
@@ -2773,6 +2794,8 @@ function selectAdminMember(i){
   document.getElementById('ae-bday').value=m.bday;
   const bdayType = m.bdayType||'solar';
   document.querySelector(`input[name="ae-cal"][value="${bdayType}"]`).checked=true;
+  _aePhoto = m.photo || null;
+  updateAeAvatar();
   refreshAdminMemberList();
 }
 function saveMemberEdit(){
@@ -2783,6 +2806,7 @@ function saveMemberEdit(){
   members[selectedMemberIdx]={
     ...saved,
     emoji:document.getElementById('ae-emoji').value.trim()||saved.emoji,
+    photo:_aePhoto||null,
     name:document.getElementById('ae-name').value.trim(),
     role:document.getElementById('ae-role').value.trim(),
     desc:document.getElementById('ae-desc').value.trim(),
@@ -2796,10 +2820,27 @@ function saveMemberEdit(){
   alert('저장되었습니다! ✅');
 }
 function cancelMemberEdit(){
-  selectedMemberIdx=null;
+  selectedMemberIdx=null; _aePhoto=null;
   document.getElementById('admin-member-edit').style.display='none';
   refreshAdminMemberList();
 }
+// 구성원 사진 업로드
+(function(){
+  const inp=document.getElementById('ae-photo-input');
+  if(inp) inp.addEventListener('change', async e=>{
+    const file=e.target.files&&e.target.files[0]; e.target.value='';
+    if(!file) return;
+    try{
+      const out=await fileToCompressedDataUrl(file, 400, 0.82);
+      const up=await uploadPhoto(out, 'member/avatar');
+      if(_aePhoto && _aePhoto.path) deletePhotoFile(_aePhoto.path);
+      _aePhoto={url:up.url, path:up.path};
+      updateAeAvatar();
+    }catch(err){ alert('사진 업로드에 실패했어요 🙏'); }
+  });
+  const em=document.getElementById('ae-emoji');
+  if(em) em.addEventListener('input', ()=>{ if(!(_aePhoto&&_aePhoto.url)) updateAeAvatar(); });
+})();
 
 // 콘텐츠 관리
 function refreshAdminContent(){
@@ -3065,6 +3106,32 @@ function setCalEvents(ev){ const d=getS(); d.calEvents=ev; setS(d); }
 
 function calKey(y,m,day){ return `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; }
 
+// 생일·기념일을 연(year)별 양력 발생일(키)로 변환 → 캘린더 자동 연동
+function specialEventsByKey(years){
+  const map={};
+  const items=[
+    ...getBirthdayItems().map(it=>({name:it.name, emoji:it.emoji||'🎂', date:it.date, calType:it.calType, color:'#E85D8A', kind:'bday'})),
+    ...getAnniversaryItems().map(it=>({name:it.name, emoji:it.emoji||'🎉', date:it.date, calType:it.calType, color:'#F57C00', kind:'anniv'}))
+  ];
+  years.forEach(year=>{
+    items.forEach(it=>{
+      if(!it.date) return;
+      let dt;
+      if(it.calType==='lunar'){
+        const [,lm,ld]=it.date.split('-').map(Number);
+        dt=lunarToSolarDate(year, lm, ld);
+      } else {
+        const [,m,d]=it.date.split('-').map(Number);
+        dt=new Date(year, m-1, d);
+      }
+      if(!dt || isNaN(dt)) return;
+      const key=calKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      (map[key]||(map[key]=[])).push({title:it.name, emoji:it.emoji, color:it.color, kind:it.kind, special:true, date:key});
+    });
+  });
+  return map;
+}
+
 function renderCalendar(){
   const monthNames=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
   document.getElementById('cal-month-title').textContent = `${calYear}년 ${monthNames[calMonth]}`;
@@ -3076,6 +3143,8 @@ function renderCalendar(){
     if(!evMap[ev.date]) evMap[ev.date]=[];
     evMap[ev.date].push(ev);
   });
+  // 생일·기념일 자동 연동 (표시 달의 앞뒤 연도까지 커버)
+  const specialMap = specialEventsByKey([calYear-1, calYear, calYear+1]);
 
   const today = new Date(); today.setHours(0,0,0,0);
   const todayKey = calKey(today.getFullYear(), today.getMonth(), today.getDate());
@@ -3113,7 +3182,7 @@ function renderCalendar(){
     const key = calKey(thisYear, thisMonth, dayNum);
     const isToday = key === todayKey;
     const isSelected = key === calSelectedDate;
-    const dayEvents = evMap[key]||[];
+    const dayEvents = (evMap[key]||[]).concat(specialMap[key]||[]);
     const dow = i%7; // 0=일, 6=토
 
     let cls = 'cal-day';
@@ -3162,14 +3231,22 @@ function renderDayEvents(key){
 
   const events = getCalEvents().filter(ev=>ev.date===key)
     .sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  const [ky]=key.split('-');
+  const specials = (specialEventsByKey([parseInt(ky)])[key])||[];
 
   const el = document.getElementById('cal-event-list');
-  if(!events.length){
+  if(!events.length && !specials.length){
     el.innerHTML = '<div class="cal-no-events">이 날은 행사가 없어요 😊<br>아래에서 추가해보세요!</div>';
     return;
   }
-  el.innerHTML = events.map((ev,i) => {
-    const globalIdx = getCalEvents().findIndex(e=>e.id===ev.id);
+  const specialHtml = specials.map(ev=>`<div class="cal-event-item" style="border-left-color:${ev.color}">
+      <div class="ev-emoji">${ev.emoji||'🎉'}</div>
+      <div class="ev-body">
+        <div class="ev-title">${ev.title}</div>
+        <div class="ev-time">${ev.kind==='bday'?'🎂 생일':'🎉 기념일'} · 매년</div>
+      </div>
+    </div>`).join('');
+  const eventHtml = events.map((ev,i) => {
     return `<div class="cal-event-item" style="border-left-color:${ev.color||'#E85D8A'}">
       <div class="ev-emoji">${ev.emoji||'🎉'}</div>
       <div class="ev-body">
@@ -3179,11 +3256,17 @@ function renderDayEvents(key){
       <button class="ev-del" onclick="deleteCalEvent('${ev.id}')">✕</button>
     </div>`;
   }).join('');
+  el.innerHTML = specialHtml + eventHtml;
 }
 
 function renderUpcoming(){
   const now = new Date(); now.setHours(0,0,0,0);
-  const events = getCalEvents()
+  const cy=now.getFullYear();
+  // 생일·기념일을 올해/내년 발생일로 펼쳐서 합치기
+  const specialMap = specialEventsByKey([cy, cy+1]);
+  const specialList = Object.keys(specialMap).flatMap(k=>specialMap[k].map(s=>({date:k, emoji:s.emoji, title:s.title})));
+  const events = getCalEvents().map(ev=>({date:ev.date, emoji:ev.emoji, title:ev.title, time:ev.time}))
+    .concat(specialList)
     .filter(ev => new Date(ev.date) >= now)
     .sort((a,b) => a.date.localeCompare(b.date))
     .slice(0,5);
