@@ -461,9 +461,11 @@ body.is-admin .admin-only{display:block;}
 .admin-member-edit-title{font-size:13px;font-weight:700;color:#667eea;margin-bottom:14px;}
 .admin-row{display:flex;gap:10px;}
 .admin-row .admin-field{flex:1;min-width:0;}
-.hero-edit-block{background:#f7f8ff;border:1px solid #e6e8fb;border-radius:12px;padding:12px 14px;margin-bottom:12px;}
-.hero-edit-head{font-size:12px;font-weight:700;color:#667eea;margin-bottom:8px;}
-.hero-edit-block input[type=text],.hero-edit-block>input{width:100%;padding:8px 11px;border:1.5px solid #e8e8e8;border-radius:9px;font-size:13px;font-family:inherit;background:#fff;outline:none;margin-bottom:8px;}
+.hero-edit-block{background:#f7f8ff;border:1px solid #e6e8fb;border-radius:12px;padding:8px 12px;margin-bottom:8px;}
+.hero-edit-head{font-size:12px;font-weight:700;color:#667eea;margin-bottom:5px;}
+.hero-edit-block input[type=text],.hero-edit-block>input{width:100%;padding:6px 10px;border:1.5px solid #e8e8e8;border-radius:9px;font-size:13px;font-family:inherit;background:#fff;outline:none;margin-bottom:5px;}
+.hero-edit-block .admin-row{margin-bottom:0;}
+.hero-edit-block .admin-field label{margin-bottom:2px;}
 .hero-color{height:34px;padding:2px 3px;width:100%;border:1.5px solid #e8e8e8;border-radius:8px;background:#fff;cursor:pointer;}
 .hero-edit-block input[type=range]{width:100%;}
 .admin-notice{background:#fff8e1;border-left:3px solid #ffc107;padding:10px 14px;border-radius:8px;font-size:12px;color:#856404;margin-bottom:14px;}
@@ -1199,14 +1201,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
         </div>
       </div>
 
-      <!-- 공통: 정렬 + 높이 -->
-      <div class="admin-field"><label>🧭 전체 정렬</label>
-        <div style="display:flex;gap:6px;">
-          <button type="button" class="admin-btn secondary" id="ac-align-left" onclick="setHeroAlign('left')" style="flex:1;">⬅ 왼쪽</button>
-          <button type="button" class="admin-btn secondary" id="ac-align-center" onclick="setHeroAlign('center')" style="flex:1;">⬛ 가운데</button>
-          <button type="button" class="admin-btn secondary" id="ac-align-right" onclick="setHeroAlign('right')" style="flex:1;">➡ 오른쪽</button>
-        </div>
-      </div>
+      <!-- 공통: 높이 -->
       <div class="admin-field"><label>📐 히어로 높이(px)</label>
         <div style="display:flex;align-items:center;gap:10px;">
           <input type="range" id="ac-hero-height" min="60" max="320" value="80" style="flex:1;" oninput="document.getElementById('ac-hero-height-val').textContent=this.value+'px'"/>
@@ -1214,17 +1209,10 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
         </div>
       </div>
 
-      <button class="admin-btn primary" onclick="saveHeroContent()" style="margin-bottom:8px;width:100%;">💾 히어로 저장</button>
-      <button class="admin-btn secondary" onclick="resetHero()" style="margin-bottom:20px;width:100%;">↺ 기본값으로 초기화</button>
-
-      <div class="admin-divider"></div>
-      <div class="admin-section-title">📓 일기 관리</div>
-      <div id="ac-diary-list" style="margin-bottom:12px;"></div>
-      <div class="admin-notice">일기는 메인 페이지 일기 섹션에서 바로 추가 가능해요</div>
+      <button class="admin-btn primary" onclick="saveHeroContent()" style="margin-bottom:20px;width:100%;">💾 히어로 저장</button>
 
       <div class="admin-divider"></div>
       <div class="admin-section-title">🖼️ 홈 사진 분할</div>
-      <div class="admin-notice">홈 화면 좌측 사진 영역을 1~5칸으로 나눕니다. 각 칸을 클릭해 사진을 올리세요.</div>
       <div id="ac-home-split" style="display:flex;gap:6px;margin-bottom:20px;">
         <button type="button" class="admin-btn secondary home-split-btn" data-n="1" onclick="setHomeSplitFromAdmin(1)" style="flex:1;">1칸</button>
         <button type="button" class="admin-btn secondary home-split-btn" data-n="2" onclick="setHomeSplitFromAdmin(2)" style="flex:1;">2칸</button>
@@ -1742,7 +1730,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v15 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v16 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -2997,16 +2985,6 @@ function refreshAdminContent(){
   set('ac-hero-height', h);
   document.getElementById('ac-hero-height-val').textContent=h+'px';
   setHeroAlign(d.heroAlign||'center', true);
-  // 일기
-  const diaries=d.mainDiaries||[];
-  document.getElementById('ac-diary-list').innerHTML=diaries.length===0?'<p style="color:#aaa;font-size:13px;">일기가 없어요</p>':
-    [...diaries].reverse().map((dd,ri)=>{
-      const i=diaries.length-1-ri;
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f8f8f8;border-radius:8px;margin-bottom:6px;font-size:13px;">
-        <span>${dd.title}</span>
-        <button onclick="deleteMainDiary(${i});refreshAdminContent();" style="background:none;border:none;color:#e05;cursor:pointer;font-size:13px;">삭제</button>
-      </div>`;
-    }).join('');
   // 홈 사진 분할 버튼 활성화 표시
   const curSplit=getHomeSplit();
   document.querySelectorAll('.home-split-btn').forEach(b=>{
