@@ -951,13 +951,11 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 .story-row-emoji{font-size:16px;}
 .story-row-title{font-weight:700;color:#1a1a1a;}
 .story-row-desc{color:#666;flex:1;min-width:140px;}
-/* 홈 위젯 안의 미션은 컴팩트하게 */
-.home-widgets-col .mission-grid{grid-template-columns:1fr;gap:8px;margin-bottom:0;}
-.home-widgets-col .mission-card{padding:12px 14px;}
-.home-widgets-col .mission-emoji{font-size:26px;margin-bottom:6px;}
-.home-widgets-col .mission-title{font-size:13px;}
-.home-widgets-col .mission-desc{font-size:11px;}
-.home-widgets-col .mission-date-badge{margin-bottom:10px;}
+/* 오늘의 미션 한 줄 표시 (홈 위젯, 컴팩트) */
+.mission-grid{display:flex;flex-direction:column;gap:6px;}
+.mission-line{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--season-bg1);border-radius:10px;}
+.mission-line-emoji{font-size:17px;flex-shrink:0;}
+.mission-line-title{font-size:13px;font-weight:600;color:#333;line-height:1.35;}
 </style>
 </head>
 <body class="spring">
@@ -1215,6 +1213,19 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
       </div>
 
       <div class="admin-divider"></div>
+      <div class="admin-section-title">🎯 오늘의 미션 관리</div>
+      <div class="admin-notice">여기에 미션을 넣어두면 매일 자동으로 2개가 홈 화면에 표시돼요.</div>
+      <div id="ac-mission-list" style="margin-bottom:12px;max-height:200px;overflow-y:auto;"></div>
+      <div class="admin-row">
+        <div class="admin-field" style="flex:0 0 64px"><label>이모지</label><input id="ac-mission-emoji" placeholder="🎯" maxlength="4"/></div>
+        <div class="admin-field"><label>미션 내용</label><input id="ac-mission-title" placeholder="예: 가족과 함께 산책하기" maxlength="40"/></div>
+      </div>
+      <input type="hidden" id="ac-mission-edit-id"/>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="admin-btn primary" id="ac-mission-submit-btn" onclick="saveMission()" style="width:auto;padding:8px 16px;font-size:13px;">➕ 미션 추가</button>
+      </div>
+
+      <div class="admin-divider"></div>
       <div class="admin-section-title">🗳️ 투표 관리</div>
       <div id="ac-poll-info" style="margin-bottom:12px;"></div>
       <button class="admin-btn danger" onclick="resetPoll()">🗑️ 현재 투표 초기화</button>
@@ -1341,12 +1352,8 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <!-- 우측 1/4: 위젯 세로 -->
   <div class="home-widgets-col">
     <div class="widget">
-      <div class="widget-label">🎯 오늘의 미션</div>
-      <div class="mission-date-badge" id="mission-date-badge" style="margin-bottom:12px;">📅 오늘의 미션</div>
+      <div class="widget-label">🎯 오늘의 미션 <span id="mission-date-badge" style="font-size:11px;font-weight:600;color:var(--muted);"></span></div>
       <div class="mission-grid" id="mission-grid"></div>
-      <div style="text-align:center;margin-top:10px;">
-        <button class="mission-refresh-btn" onclick="refreshMissions()">🔀 미션 새로고침</button>
-      </div>
     </div>
     <div class="widget">
       <div class="widget-label">💬 오늘의 한마디</div>
@@ -1677,7 +1684,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v11 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v12 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -2852,6 +2859,8 @@ function refreshAdminContent(){
       <span style="${b.done?'text-decoration:line-through;color:#aaa':''}">  ${b.done?'✅':'⬜'} ${b.text}</span>
       <button onclick="delBucket(event,${i});renderBuckets();refreshAdminContent();" style="margin-left:auto;background:none;border:none;color:#e05;cursor:pointer;">✕</button>
     </div>`).join('');
+  // 미션 관리 목록
+  renderAdminMissions();
 }
 function saveHeroContent(){
   const d=getS();
@@ -3375,66 +3384,91 @@ function spinRoulette(){
 // ══════════════════════════════════════
 // ── 🎯 오늘의 가족 미션 ──
 // ══════════════════════════════════════
-const MISSION_POOL = [
-  {emoji:'📸',title:'가족 단체 셀카',desc:'오늘 가족 모두와 사진 한 장 찍기'},
-  {emoji:'📞',title:'가족에게 전화',desc:'가족 중 한 명에게 안부 전화 걸기'},
-  {emoji:'🍳',title:'같이 요리하기',desc:'가족과 함께 음식 한 가지 만들기'},
-  {emoji:'🎮',title:'보드게임 한판',desc:'가족과 함께 게임 즐기기'},
-  {emoji:'🚶',title:'가족 산책',desc:'동네 한 바퀴 가족과 함께 걷기'},
-  {emoji:'💌',title:'칭찬 편지 쓰기',desc:'가족 중 한 명에게 감사 문자 보내기'},
-  {emoji:'🎬',title:'영화 같이 보기',desc:'가족과 영화 한 편 보기'},
-  {emoji:'☕',title:'티타임 가지기',desc:'오늘 가족과 차 한 잔 나누기'},
-  {emoji:'📖',title:'추억 사진 보기',desc:'오래된 가족 사진 함께 꺼내보기'},
-  {emoji:'🧹',title:'깜짝 청소',desc:'집 한 곳을 몰래 청소해두기'},
-  {emoji:'🎵',title:'노래 같이 부르기',desc:'가족 앞에서 노래 한 곡 부르기'},
-  {emoji:'🌅',title:'아침 인사 먼저',desc:'오늘은 내가 먼저 좋은 아침 인사하기'},
-  {emoji:'🍕',title:'배달 파티',desc:'가족이 원하는 음식 배달 시키기'},
-  {emoji:'😂',title:'웃긴 영상 공유',desc:'단톡방에 재밌는 영상 하나 올리기'},
-  {emoji:'🤗',title:'안아드리기',desc:'가족 중 한 명을 꼭 안아드리기'},
+// ── 오늘의 미션 (관리자 관리형 풀에서 매일 자동 2개) ──
+const DEFAULT_MISSIONS = [
+  {id:'m1',emoji:'📸',title:'가족 단체 셀카 찍기'},
+  {id:'m2',emoji:'📞',title:'가족에게 안부 전화하기'},
+  {id:'m3',emoji:'🍳',title:'가족과 함께 요리하기'},
+  {id:'m4',emoji:'🎮',title:'가족과 보드게임 한판'},
+  {id:'m5',emoji:'🚶',title:'가족과 동네 한 바퀴 산책'},
+  {id:'m6',emoji:'💌',title:'가족에게 감사 문자 보내기'},
+  {id:'m7',emoji:'🎬',title:'가족과 영화 한 편 보기'},
+  {id:'m8',emoji:'☕',title:'가족과 차 한 잔 나누기'},
+  {id:'m9',emoji:'🤗',title:'가족 한 명 꼭 안아주기'},
+  {id:'m10',emoji:'🌅',title:'내가 먼저 아침 인사하기'},
 ];
-
+function getMissionPool(){ const d=getS(); return d.missionPool || DEFAULT_MISSIONS; }
+function setMissionPool(arr){ const d=getS(); d.missionPool=arr; setS(d); }
 function getTodayKey(){ const t=new Date(); return `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`; }
 
-function getMissionState(){
-  const d=getS(); const today=getTodayKey();
-  if(!d.mission || d.mission.date!==today){
-    d.mission={ date:today, indices:[], done:[] };
-    const idx=[...Array(MISSION_POOL.length).keys()].sort(()=>Math.random()-0.5).slice(0,4);
-    d.mission.indices=idx; d.mission.done=new Array(4).fill(false);
-    setS(d);
-  }
-  return d.mission;
+// 날짜 기반 결정적 선택 → 모든 기기에서 같은 2개, 매일 자동으로 바뀜
+function dailyMissions(){
+  const pool=getMissionPool();
+  if(pool.length<=2) return pool.slice();
+  const t=new Date();
+  const seed=t.getFullYear()*10000+(t.getMonth()+1)*100+t.getDate();
+  const i1=seed%pool.length;
+  let i2=(Math.floor(seed/pool.length)+1)%pool.length;
+  if(i2===i1) i2=(i1+1)%pool.length;
+  return [pool[i1], pool[i2]];
 }
 
 function renderMissions(){
   const el=document.getElementById('mission-grid'); if(!el) return;
-  const state=getMissionState();
-  const today=new Date();
-  document.getElementById('mission-date-badge').textContent =
-    `📅 ${today.getMonth()+1}월 ${today.getDate()}일 오늘의 미션`;
-  el.innerHTML = state.indices.map((mi,i)=>{
-    const m=MISSION_POOL[mi];
-    return `<div class="mission-card${state.done[i]?' done':''}" onclick="toggleMission(${i})">
-      <div class="mission-stamp">✅</div>
-      <div class="mission-emoji">${m.emoji}</div>
-      <div class="mission-title">${m.title}</div>
-      <div class="mission-desc">${m.desc}</div>
-    </div>`;
-  }).join('');
+  const badge=document.getElementById('mission-date-badge');
+  const t=new Date();
+  if(badge) badge.textContent=`${t.getMonth()+1}.${t.getDate()}`;
+  const picks=dailyMissions();
+  el.innerHTML = picks.length
+    ? picks.map(m=>`<div class="mission-line"><span class="mission-line-emoji">${m.emoji||'🎯'}</span><span class="mission-line-title">${m.title}</span></div>`).join('')
+    : '<div style="font-size:12px;color:var(--muted);padding:4px 0;">관리자 모드에서 미션을 추가하세요</div>';
 }
 
-function toggleMission(i){
-  const d=getS(); d.mission.done[i]=!d.mission.done[i]; setS(d);
-  renderMissions();
-  const done=d.mission.done.filter(Boolean).length;
-  if(done===4) showCheerToast('🎉 오늘 미션 모두 완료! 대단해요!');
+// ── 미션 관리(관리자) ──
+function renderAdminMissions(){
+  const el=document.getElementById('ac-mission-list'); if(!el) return;
+  const pool=getMissionPool();
+  el.innerHTML = pool.length===0 ? '<p style="color:#aaa;font-size:13px;">미션이 없어요</p>' :
+    pool.map(m=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#f8f8f8;border-radius:8px;margin-bottom:6px;font-size:13px;">
+      <span style="font-size:16px;">${m.emoji||'🎯'}</span>
+      <span style="flex:1;">${m.title}</span>
+      <button onclick="editMission('${m.id}')" style="padding:2px 8px;background:var(--season-bg1);color:var(--season-accent);border:1px solid var(--season-accent);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">수정</button>
+      <button onclick="delMission('${m.id}')" style="padding:2px 8px;background:#fee2e2;color:#dc2626;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">삭제</button>
+    </div>`).join('');
 }
-
-function refreshMissions(){
-  const d=getS(); const today=getTodayKey();
-  const idx=[...Array(MISSION_POOL.length).keys()].sort(()=>Math.random()-0.5).slice(0,4);
-  d.mission={ date:today, indices:idx, done:new Array(4).fill(false) };
-  setS(d); renderMissions();
+function saveMission(){
+  const emoji=document.getElementById('ac-mission-emoji').value.trim()||'🎯';
+  const title=document.getElementById('ac-mission-title').value.trim();
+  const editId=document.getElementById('ac-mission-edit-id').value;
+  if(!title){ alert('미션 내용을 입력해주세요!'); return; }
+  let pool=getMissionPool().slice();
+  if(editId){
+    pool=pool.map(m=>m.id===editId?{...m,emoji,title}:m);
+    addLog('미션 수정: '+title);
+  } else {
+    pool.push({id:'m'+Date.now().toString(36), emoji, title});
+    addLog('미션 추가: '+title);
+  }
+  setMissionPool(pool);
+  document.getElementById('ac-mission-emoji').value='';
+  document.getElementById('ac-mission-title').value='';
+  document.getElementById('ac-mission-edit-id').value='';
+  document.getElementById('ac-mission-submit-btn').textContent='➕ 미션 추가';
+  renderAdminMissions(); renderMissions();
+}
+function editMission(id){
+  const m=getMissionPool().find(x=>x.id===id); if(!m) return;
+  document.getElementById('ac-mission-emoji').value=m.emoji||'';
+  document.getElementById('ac-mission-title').value=m.title||'';
+  document.getElementById('ac-mission-edit-id').value=m.id;
+  document.getElementById('ac-mission-submit-btn').textContent='💾 수정 완료';
+  document.getElementById('ac-mission-submit-btn').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function delMission(id){
+  if(!confirm('이 미션을 삭제할까요?')) return;
+  setMissionPool(getMissionPool().filter(m=>m.id!==id));
+  renderAdminMissions(); renderMissions();
+  addLog('미션 삭제');
 }
 
 // ══════════════════════════════════════
