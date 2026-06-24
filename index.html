@@ -340,8 +340,16 @@ section{padding:60px 24px;max-width:1100px;margin:0 auto;position:relative;z-ind
 .diary-tray-up{display:flex;align-items:center;justify-content:center;height:90px;font-size:11px;color:var(--muted);}
 .diary-tray-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;}
 /* 일기 카드의 첨부 사진(작게) */
-.diary-card-photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-.diary-card-photos img{width:110px;height:110px;object-fit:cover;border-radius:10px;cursor:pointer;}
+/* 일기 카드 2분할: 좌 내용 / 우 사진 (사진은 보드 크기에 비례) */
+.diary-card-body{display:flex;gap:16px;align-items:flex-start;}
+.diary-card-text{flex:1;min-width:0;}
+.diary-card-photos{flex:0 0 36%;max-width:36%;display:flex;flex-direction:column;gap:8px;}
+.diary-card-photos img{width:100%;height:auto;max-height:260px;object-fit:cover;border-radius:12px;cursor:pointer;display:block;}
+@media(max-width:640px){
+  .diary-card-body{flex-direction:column;}
+  .diary-card-photos{flex:none;max-width:100%;flex-direction:row;flex-wrap:wrap;}
+  .diary-card-photos img{width:90px;height:90px;}
+}
 @media(max-width:640px){
   .diary-split{flex-direction:column;}
   .diary-photo-tray{width:100%;flex-direction:row;flex-wrap:wrap;max-height:none;}
@@ -538,10 +546,8 @@ body.is-admin .admin-only{display:block;}
   cursor:pointer;transition:background 0.15s;position:relative;
 }
 .cal-day:nth-child(7n){border-right:none;}
-/* 금/토요일 사이 구분선 */
-.cal-days .cal-day:nth-child(7n+6){border-right:2px solid var(--season-accent);}
-.cal-weekdays .cal-wd:nth-child(6){border-right:2px solid rgba(255,255,255,0.55);}
 .cal-day:hover{background:var(--season-bg1);}
+.cal-day.holiday .cal-day-num{color:#e05;}
 .cal-day.other-month{opacity:0.35;}
 .cal-day.today{background:var(--season-bg1);}
 .cal-day.today .cal-day-num{
@@ -1587,7 +1593,10 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
         </div>
       </div>
     </div>
-    <button class="admin-btn primary" onclick="addCalEvent()" style="width:100%;margin-top:8px;">➕ 행사 추가</button>
+    <input type="hidden" id="ev-edit-id"/>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+      <button class="admin-btn primary" id="ev-submit-btn" onclick="addCalEvent()" style="width:auto;padding:8px 16px;font-size:13px;">➕ 행사 추가</button>
+    </div>
   </div>
 </section>
 </div><!-- /page-calendar -->
@@ -1746,7 +1755,6 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 <!-- 우측 고정: 생일 & 기념일 -->
 <aside id="dday-rail">
   <div class="dday-rail-title">🎂 생일 &amp; 기념일</div>
-  <div class="dday-rail-sub" id="dday-rail-sub">👨‍👩‍👧‍👦 가족 생일은 자동 표시돼요</div>
   <div class="dday-list" id="dday-list"></div>
 </aside>
 
@@ -1756,7 +1764,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v20 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v21 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -2594,7 +2602,7 @@ function renderGalleryFolders(){
   const counts={};
   getGallery().forEach(p=>{counts[p.folder]=(counts[p.folder]||0)+1;});
   el.innerHTML=getGalleryFolders().map(f=>
-    `<button class="gallery-folder${f.id===_galleryFolder?' active':''}" onclick="selectGalleryFolder('${f.id}')">${f.label}<span class="gallery-folder-count">${counts[f.id]||0}</span></button>`
+    `<button class="gallery-folder${f.id===_galleryFolder?' active':''}" onclick="selectGalleryFolder('${f.id}')">${f.label}</button>`
   ).join('');
 }
 function selectGalleryFolder(id){ _galleryFolder=id; renderGalleryFolders(); renderGallery(); }
@@ -2663,7 +2671,10 @@ function renderMainDiary(){
     const photosHtml = photos.length ? `<div class="diary-card-photos">${photos.map(p=>`<img src="${p.url}" onclick="window.open('${p.url}','_blank','noopener')"/>`).join('')}</div>` : '';
     return `<div class="diary-card">
       <div class="diary-date"><div class="diary-day">${dd.day}</div><div class="diary-month">${dd.month}</div></div>
-      <div style="flex:1;min-width:0;"><div class="diary-title">${dd.title}</div>${meta}<div class="diary-body-text">${content}</div>${photosHtml}${tags?`<div class="diary-tags-row">${tags}</div>`:''}</div>
+      <div class="diary-card-body" style="flex:1;min-width:0;">
+        <div class="diary-card-text"><div class="diary-title">${dd.title}</div>${meta}<div class="diary-body-text">${content}</div>${tags?`<div class="diary-tags-row">${tags}</div>`:''}</div>
+        ${photosHtml}
+      </div>
       <div style="position:absolute;top:12px;right:12px;display:flex;gap:4px;">
         <button class="diary-edit" onclick="editMainDiary(${i})" title="수정" style="background:none;border:none;color:#bbb;font-size:14px;cursor:pointer;">✏️</button>
         <button class="diary-del" onclick="deleteMainDiary(${i})" title="삭제" style="position:static;">✕</button>
@@ -3260,6 +3271,28 @@ function specialEventsByKey(years){
   return map;
 }
 
+// ── 우리나라 공휴일 (양력 고정 + 음력: 설날·추석·부처님오신날) ──
+function holidaysByKey(years){
+  const map={};
+  const add=(dt,name)=>{ if(!dt||isNaN(dt))return; const k=calKey(dt.getFullYear(),dt.getMonth(),dt.getDate()); (map[k]||(map[k]=[])).push(name); };
+  const D=(y,m,d)=>new Date(y,m-1,d);
+  const off=(dt,n)=>{ const x=new Date(dt); x.setDate(x.getDate()+n); return x; };
+  years.forEach(y=>{
+    // 양력 고정 공휴일
+    add(D(y,1,1),'신정'); add(D(y,3,1),'삼일절'); add(D(y,5,5),'어린이날');
+    add(D(y,6,6),'현충일'); add(D(y,8,15),'광복절'); add(D(y,10,3),'개천절');
+    add(D(y,10,9),'한글날'); add(D(y,12,25),'성탄절');
+    // 음력 공휴일 (lunar-javascript로 양력 변환)
+    const seol=lunarToSolarDate(y,1,1);     // 설날
+    if(seol){ add(off(seol,-1),'설날 연휴'); add(seol,'설날'); add(off(seol,1),'설날 연휴'); }
+    const chu=lunarToSolarDate(y,8,15);      // 추석
+    if(chu){ add(off(chu,-1),'추석 연휴'); add(chu,'추석'); add(off(chu,1),'추석 연휴'); }
+    const buda=lunarToSolarDate(y,4,8);      // 부처님오신날
+    if(buda) add(buda,'부처님오신날');
+  });
+  return map;
+}
+
 function renderCalendar(){
   const monthNames=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
   document.getElementById('cal-month-title').textContent = `${calYear}년 ${monthNames[calMonth]}`;
@@ -3273,6 +3306,8 @@ function renderCalendar(){
   });
   // 생일·기념일 자동 연동 (표시 달의 앞뒤 연도까지 커버)
   const specialMap = specialEventsByKey([calYear-1, calYear, calYear+1]);
+  // 우리나라 공휴일
+  const holiMap = holidaysByKey([calYear-1, calYear, calYear+1]);
 
   const today = new Date(); today.setHours(0,0,0,0);
   const todayKey = calKey(today.getFullYear(), today.getMonth(), today.getDate());
@@ -3310,13 +3345,15 @@ function renderCalendar(){
     const key = calKey(thisYear, thisMonth, dayNum);
     const isToday = key === todayKey;
     const isSelected = key === calSelectedDate;
-    const dayEvents = (evMap[key]||[]).concat(specialMap[key]||[]);
+    const holis = (holiMap[key]||[]).map(name=>({title:name, color:'#e53935', kind:'holiday'}));
+    const dayEvents = holis.concat(evMap[key]||[]).concat(specialMap[key]||[]);
     const dow = i%7; // 0=일, 6=토
 
     let cls = 'cal-day';
     if(isOther) cls += ' other-month';
     if(isToday) cls += ' today';
     if(isSelected) cls += ' selected';
+    if(holis.length) cls += ' holiday';
 
     const numCls = dow===0 ? 'cal-day-num sun' : dow===6 ? 'cal-day-num sat' : 'cal-day-num';
 
@@ -3361,12 +3398,20 @@ function renderDayEvents(key){
     .sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
   const [ky]=key.split('-');
   const specials = (specialEventsByKey([parseInt(ky)])[key])||[];
+  const holidays = (holidaysByKey([parseInt(ky)])[key])||[];
 
   const el = document.getElementById('cal-event-list');
-  if(!events.length && !specials.length){
+  if(!events.length && !specials.length && !holidays.length){
     el.innerHTML = '<div class="cal-no-events">이 날은 행사가 없어요 😊<br>아래에서 추가해보세요!</div>';
     return;
   }
+  const holidayHtml = holidays.map(name=>`<div class="cal-event-item" style="border-left-color:#e53935">
+      <div class="ev-emoji">🇰🇷</div>
+      <div class="ev-body">
+        <div class="ev-title" style="color:#e53935;">${name}</div>
+        <div class="ev-time">공휴일</div>
+      </div>
+    </div>`).join('');
   const specialHtml = specials.map(ev=>`<div class="cal-event-item" style="border-left-color:${ev.color}">
       <div class="ev-emoji">${ev.emoji||'🎉'}</div>
       <div class="ev-body">
@@ -3381,10 +3426,11 @@ function renderDayEvents(key){
         <div class="ev-title">${ev.title}</div>
         <div class="ev-time">${ev.time||'종일'}${ev.desc ? ' · '+ev.desc : ''}</div>
       </div>
+      <button class="ev-edit" onclick="editCalEvent('${ev.id}')" title="수정" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:13px;flex-shrink:0;">✏️</button>
       <button class="ev-del" onclick="deleteCalEvent('${ev.id}')">✕</button>
     </div>`;
   }).join('');
-  el.innerHTML = specialHtml + eventHtml;
+  el.innerHTML = holidayHtml + specialHtml + eventHtml;
 }
 
 function renderUpcoming(){
@@ -3437,33 +3483,49 @@ function addCalEvent(){
   const date  = document.getElementById('ev-date').value;
   const title = document.getElementById('ev-title').value.trim();
   const desc  = document.getElementById('ev-desc').value.trim();
+  const editId= document.getElementById('ev-edit-id').value;
   if(!date||!title){ alert('날짜와 제목을 입력해주세요!'); return; }
 
-  const ev = {
-    id: Date.now().toString(),
-    date, title, time:'', desc,
-    emoji: evEmoji, color: evColor
-  };
   const events = getCalEvents();
-  events.push(ev);
+  if(editId){
+    const e=events.find(x=>x.id===editId);
+    if(e){ e.date=date; e.title=title; e.desc=desc; e.emoji=evEmoji; e.color=evColor; }
+    addLog('캘린더 행사 수정: '+title);
+  } else {
+    events.push({ id: Date.now().toString(), date, title, time:'', desc, emoji: evEmoji, color: evColor });
+    addLog('캘린더 행사 추가: '+title);
+  }
   setCalEvents(events);
 
   // 입력 초기화
   document.getElementById('ev-title').value='';
   document.getElementById('ev-desc').value='';
+  document.getElementById('ev-edit-id').value='';
+  document.getElementById('ev-submit-btn').textContent='➕ 행사 추가';
 
   calSelectedDate = date;
-  // 해당 달로 이동
   const [y,m] = date.split('-').map(Number);
   calYear=y; calMonth=m-1;
   renderCalendar();
-  addLog('캘린더 행사 추가: '+title);
+}
+function editCalEvent(id){
+  const e=getCalEvents().find(x=>x.id===id); if(!e) return;
+  document.getElementById('ev-date').value=e.date||'';
+  document.getElementById('ev-title').value=e.title||'';
+  document.getElementById('ev-desc').value=e.desc||'';
+  document.getElementById('ev-edit-id').value=e.id;
+  evEmoji=e.emoji||'🎉'; evColor=e.color||'#E85D8A';
+  document.querySelectorAll('.ev-emoji-btn').forEach(b=>b.classList.toggle('active', b.textContent.trim()===evEmoji));
+  document.querySelectorAll('.ev-color-btn').forEach(b=>b.classList.toggle('active', b.getAttribute('style')&&b.getAttribute('style').includes(evColor)));
+  document.getElementById('ev-submit-btn').textContent='💾 수정 완료';
+  document.querySelector('#page-calendar .admin-box').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 function deleteCalEvent(id){
   if(!confirm('행사를 삭제할까요?')) return;
   const events = getCalEvents().filter(ev=>ev.id!==id);
   setCalEvents(events);
+  if(document.getElementById('ev-edit-id').value===id){ document.getElementById('ev-edit-id').value=''; document.getElementById('ev-submit-btn').textContent='➕ 행사 추가'; }
   renderCalendar();
   if(calSelectedDate) renderDayEvents(calSelectedDate);
   addLog('캘린더 행사 삭제');
@@ -3838,7 +3900,7 @@ function renderStory(){
   // 구간 탭
   if(tabsEl){
     tabsEl.innerHTML = eras.map(k=>
-      `<button class="story-era-btn${k===_storyEra?' active':''}" onclick="switchStoryEra('${k}')">${storyEraLabel(k)} <span class="story-era-empty">(${groups[k].length})</span></button>`
+      `<button class="story-era-btn${k===_storyEra?' active':''}" onclick="switchStoryEra('${k}')">${storyEraLabel(k)}</button>`
     ).join('');
   }
   // 한 줄 표시(날짜·이모지·제목·내용) + 그 위에 수정/삭제(관리자만)
