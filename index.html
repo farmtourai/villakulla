@@ -1397,7 +1397,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   </button>
   <button class="sidebar-item" onclick="showPage('story')" data-page="story">
     <span class="sidebar-item-icon">📖</span>
-    <span class="sidebar-item-label">가족 스토리</span>
+    <span class="sidebar-item-label">우리의 지난날</span>
   </button>
   <button class="sidebar-item" onclick="showPage('cheer')" data-page="cheer">
     <span class="sidebar-item-icon">💌</span>
@@ -1476,7 +1476,6 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
           <div style="display:flex;align-items:center;gap:6px;">
             <div id="ae-avatar-preview" onclick="document.getElementById('ae-photo-input').click()" title="클릭해서 사진 업로드" style="width:46px;height:46px;border-radius:50%;background:var(--season-bg1);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;overflow:hidden;border:1.5px solid var(--border);flex-shrink:0;">🙂</div>
             <input type="file" id="ae-photo-input" accept="image/*" style="display:none"/>
-            <input id="ae-emoji" maxlength="4" placeholder="🙂" title="사진이 없을 때 쓰는 이모지" style="width:42px;text-align:center;"/>
           </div>
         </div>
         <div class="admin-field" style="flex:1"><label>이름</label><input id="ae-name"/></div>
@@ -1602,9 +1601,9 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 <div id="page-story" class="page-section">
 <!-- 가족 스토리 타임라인 -->
 <section id="story">
-  <div class="section-title">📖 가족 스토리</div>
+  <div class="section-title">📖 우리의 지난날</div>
   <div class="divider"></div>
-  <p class="section-sub">우리 가족의 소중한 역사를 기록해요 ✨</p>
+  <p class="section-sub">📖 우리의 지난날 · 가족의 소중한 역사를 기록해요 ✨</p>
   <div class="story-eras" id="story-eras"></div>
   <div class="story-list" id="timeline-list"></div>
 
@@ -2944,13 +2943,14 @@ function refreshAdminMemberList(){
       <div style="font-size:12px;color:#aaa;">▶</div>
     </div>`).join('');
 }
-let _aePhoto=null;   // 편집 중인 구성원 사진 {url,path}
+let _aePhoto=null;     // 편집 중인 구성원 사진 {url,path}
+let _aeEmojiVal='🙂';  // 사진 없을 때 표시용(이모지 입력칸은 제거, 기존 값 유지)
 function updateAeAvatar(){
   const el=document.getElementById('ae-avatar-preview'); if(!el) return;
   if(_aePhoto && _aePhoto.url){
     el.innerHTML=`<img src="${_aePhoto.url}" style="width:100%;height:100%;object-fit:cover;"/>`;
   } else {
-    el.textContent = (document.getElementById('ae-emoji').value||'🙂');
+    el.textContent = _aeEmojiVal||'🙂';
   }
 }
 function selectAdminMember(i){
@@ -2958,7 +2958,7 @@ function selectAdminMember(i){
   selectedMemberIdx=i;
   document.getElementById('admin-member-edit').style.display='block';
   document.getElementById('admin-edit-title').textContent='✏️ '+m.name+' 편집 중';
-  document.getElementById('ae-emoji').value=m.emoji;
+  _aeEmojiVal=m.emoji||'🙂';
   document.getElementById('ae-name').value=m.name;
   document.getElementById('ae-role').value=m.role;
   document.getElementById('ae-desc').value=m.desc;
@@ -2977,7 +2977,7 @@ function saveMemberEdit(){
   const saved=members[selectedMemberIdx];
   members[selectedMemberIdx]={
     ...saved,
-    emoji:document.getElementById('ae-emoji').value.trim()||saved.emoji,
+    emoji:_aeEmojiVal||saved.emoji,
     photo:_aePhoto||null,
     name:document.getElementById('ae-name').value.trim(),
     role:document.getElementById('ae-role').value.trim(),
@@ -3010,8 +3010,6 @@ function cancelMemberEdit(){
       updateAeAvatar();
     }catch(err){ alert('사진 업로드에 실패했어요 🙏'); }
   });
-  const em=document.getElementById('ae-emoji');
-  if(em) em.addEventListener('input', ()=>{ if(!(_aePhoto&&_aePhoto.url)) updateAeAvatar(); });
 })();
 
 // 콘텐츠 관리
