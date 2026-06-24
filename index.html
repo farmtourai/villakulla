@@ -1764,7 +1764,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v21 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v22 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -3271,24 +3271,33 @@ function specialEventsByKey(years){
   return map;
 }
 
-// ── 우리나라 공휴일 (양력 고정 + 음력: 설날·추석·부처님오신날) ──
+// ── 우리나라 공휴일 + 대체공휴일 ──
 function holidaysByKey(years){
   const map={};
-  const add=(dt,name)=>{ if(!dt||isNaN(dt))return; const k=calKey(dt.getFullYear(),dt.getMonth(),dt.getDate()); (map[k]||(map[k]=[])).push(name); };
+  const k=dt=>calKey(dt.getFullYear(),dt.getMonth(),dt.getDate());
   const D=(y,m,d)=>new Date(y,m-1,d);
   const off=(dt,n)=>{ const x=new Date(dt); x.setDate(x.getDate()+n); return x; };
   years.forEach(y=>{
-    // 양력 고정 공휴일
-    add(D(y,1,1),'신정'); add(D(y,3,1),'삼일절'); add(D(y,5,5),'어린이날');
-    add(D(y,6,6),'현충일'); add(D(y,8,15),'광복절'); add(D(y,10,3),'개천절');
-    add(D(y,10,9),'한글날'); add(D(y,12,25),'성탄절');
-    // 음력 공휴일 (lunar-javascript로 양력 변환)
-    const seol=lunarToSolarDate(y,1,1);     // 설날
-    if(seol){ add(off(seol,-1),'설날 연휴'); add(seol,'설날'); add(off(seol,1),'설날 연휴'); }
-    const chu=lunarToSolarDate(y,8,15);      // 추석
-    if(chu){ add(off(chu,-1),'추석 연휴'); add(chu,'추석'); add(off(chu,1),'추석 연휴'); }
-    const buda=lunarToSolarDate(y,4,8);      // 부처님오신날
-    if(buda) add(buda,'부처님오신날');
+    const holset=new Set();        // 이 해 모든 공휴일 키 (대체 계산용)
+    const put=(dt,name)=>{ if(!dt||isNaN(dt))return; (map[k(dt)]||(map[k(dt)]=[])).push(name); holset.add(k(dt)); };
+    // 단일 공휴일 (rule: 'none'=대체없음, 'satsun'=토·일 겹치면 대체)
+    const singles=[
+      [D(y,1,1),'신정','none'], [D(y,3,1),'삼일절','satsun'], [D(y,5,5),'어린이날','satsun'],
+      [D(y,6,6),'현충일','none'], [D(y,8,15),'광복절','satsun'], [D(y,10,3),'개천절','satsun'],
+      [D(y,10,9),'한글날','satsun'], [D(y,12,25),'성탄절','satsun'],
+    ];
+    const buda=lunarToSolarDate(y,4,8); if(buda) singles.push([buda,'부처님오신날','satsun']);
+    singles.forEach(([dt,name])=>put(dt,name));
+    // 설날·추석 연휴(3일)
+    const blocks=[];
+    const seol=lunarToSolarDate(y,1,1); if(seol) blocks.push({days:[off(seol,-1),seol,off(seol,1)],name:'설날'});
+    const chu=lunarToSolarDate(y,8,15); if(chu) blocks.push({days:[off(chu,-1),chu,off(chu,1)],name:'추석'});
+    blocks.forEach(bl=> bl.days.forEach((d,i)=> put(d, i===1?bl.name:bl.name+' 연휴')));
+    // 대체공휴일: 해당 공휴일 다음의 '평일이며 공휴일 아닌' 첫 날
+    const nextOpen=(fromDt)=>{ let c=off(fromDt,1),g=0; while(g++<40){ const dw=c.getDay(); if(dw!==0&&dw!==6&&!holset.has(k(c))) return c; c=off(c,1);} return c; };
+    const addSub=(fromDt,label)=>{ const s=nextOpen(fromDt); (map[k(s)]||(map[k(s)]=[])).push(label+' 대체공휴일'); holset.add(k(s)); };
+    singles.forEach(([dt,name,rule])=>{ if(rule==='satsun'){ const dw=dt.getDay(); if(dw===0||dw===6) addSub(dt,name); } });
+    blocks.forEach(bl=>{ if(bl.days.some(d=>d.getDay()===0)) addSub(bl.days[bl.days.length-1], bl.name); });
   });
   return map;
 }
