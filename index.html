@@ -1397,7 +1397,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   </button>
   <button class="sidebar-item" onclick="showPage('story')" data-page="story">
     <span class="sidebar-item-icon">📖</span>
-    <span class="sidebar-item-label">우리의 지난날</span>
+    <span class="sidebar-item-label">우리의 발자취</span>
   </button>
   <button class="sidebar-item" onclick="showPage('cheer')" data-page="cheer">
     <span class="sidebar-item-icon">💌</span>
@@ -1405,11 +1405,11 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   </button>
   <button class="sidebar-item" onclick="showPage('gallery')" data-page="gallery">
     <span class="sidebar-item-icon">📸</span>
-    <span class="sidebar-item-label">추억의 기록</span>
+    <span class="sidebar-item-label">추억 보관소</span>
   </button>
   <button class="sidebar-item" onclick="showPage('diary')" data-page="diary">
     <span class="sidebar-item-icon">📓</span>
-    <span class="sidebar-item-label">내가 쓴 우리일기</span>
+    <span class="sidebar-item-label">우리 일기</span>
   </button>
   <button class="sidebar-item" onclick="showPage('roulette')" data-page="roulette">
     <span class="sidebar-item-icon">🎰</span>
@@ -1601,9 +1601,9 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 <div id="page-story" class="page-section">
 <!-- 가족 스토리 타임라인 -->
 <section id="story">
-  <div class="section-title">📖 우리의 지난날</div>
+  <div class="section-title">📖 우리의 발자취</div>
   <div class="divider"></div>
-  <p class="section-sub">📖 우리의 지난날 · 가족의 소중한 역사를 기록해요 ✨</p>
+  <p class="section-sub">📖 우리의 발자취 · 가족의 소중한 역사를 기록해요 ✨</p>
   <div class="story-eras" id="story-eras"></div>
   <div class="story-list" id="timeline-list"></div>
 
@@ -1670,7 +1670,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 <div id="page-gallery" class="page-section">
 <!-- 사진첩 -->
 <section id="gallery">
-  <div class="section-title">📸 추억의 기록</div>
+  <div class="section-title">📸 추억 보관소</div>
   <div class="divider"></div>
   <p class="section-sub">가족별 폴더에 소중한 순간들을 담아요 📷</p>
   <div class="gallery-folders" id="gallery-folders"></div>
@@ -1692,7 +1692,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 <div id="page-diary" class="page-section">
 <!-- 일기 -->
 <section id="diary">
-  <div class="section-title">📓 내가 쓴 우리일기</div>
+  <div class="section-title">📓 우리 일기</div>
   <div class="divider"></div>
   <div class="diary-list" id="main-diary-list"></div>
   <div class="diary-write-box" style="margin-top:24px;">
@@ -1761,7 +1761,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v26 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v27 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -2617,7 +2617,8 @@ function renderGallery(){
         <div class="gallery-overlay-text" style="font-size:11px;font-weight:400;">${p.date}</div>
       </div>
       <button class="gallery-del-btn" onclick="deletePhoto('${p.id}',event)">✕</button>`;
-    el.querySelector('img').addEventListener('click',()=>window.open(p.url,'_blank','noopener'));
+    // 아이템 전체에 클릭 → 새창 (오버레이가 이미지를 덮어 img 클릭이 안 먹던 문제 수정)
+    el.addEventListener('click',()=>window.open(p.url,'_blank','noopener'));
     gg.appendChild(el);
   });
 }
