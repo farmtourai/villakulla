@@ -1761,7 +1761,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v29 · 2026-06-23</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v30 · 2026-06-23</span>
 </footer>
 
 <script>
@@ -2603,39 +2603,65 @@ function renderGalleryFolders(){
   ).join('');
 }
 function selectGalleryFolder(id){ _galleryFolder=id; renderGalleryFolders(); renderGallery(); }
+// 폴더 → 구성원 매핑 (부모는 아빠+엄마)
+const FOLDER_MEMBERS = { parents:['dad','mom'], son1:['son1'], daughter:['daughter'], son2:['son2'], son3:['son3'] };
+// 폴더에 표시할 사진 모음 = 구성원 개인페이지 사진(d[mid].photos) + 레거시 갤러리(d.gallery)
+function galleryPhotosFor(folderId){
+  const d=getS(); const out=[];
+  (FOLDER_MEMBERS[folderId]||[]).forEach(mid=>{
+    ((d[mid]&&d[mid].photos)||[]).forEach((p,idx)=>{
+      const url=(typeof p==='string')?p:p.url;
+      out.push({url, path:(p&&p.path)||'', src:'member', mid, idx, authorEmail:p&&p.authorEmail});
+    });
+  });
+  getGallery().filter(p=>p.folder===folderId).forEach(p=>{
+    out.push({url:p.url, path:p.path, src:'gallery', id:p.id, authorEmail:p.authorEmail});
+  });
+  return out;
+}
 function renderGallery(){
   const gg=document.getElementById('gallery-grid');
   if(!gg) return;
-  renderGalleryFolders();   // 폴더 탭도 함께 렌더 (부모/큰아들/딸/작은아들/막내아들)
+  renderGalleryFolders();
   gg.innerHTML='';
-  const photos=getGallery().filter(p=>p.folder===_galleryFolder);
+  const photos=galleryPhotosFor(_galleryFolder);
+  if(!photos.length){ gg.innerHTML='<p style="grid-column:1/-1;color:var(--muted);font-size:13px;text-align:center;padding:20px;">아직 사진이 없어요. 개인 페이지나 아래 ➕ 버튼으로 추가하세요 📷</p>'; return; }
   photos.forEach(p=>{
     const el=document.createElement('div'); el.className='gallery-item';
-    el.innerHTML=`<img src="${p.url}" loading="lazy"/>
-      <div class="gallery-overlay">
-        <div class="gallery-overlay-text">📷 ${p.name}</div>
-        <div class="gallery-overlay-text" style="font-size:11px;font-weight:400;">${p.date}</div>
-      </div>
-      <button class="gallery-del-btn" onclick="deletePhoto('${p.id}',event)">✕</button>`;
-    // 아이템 전체에 클릭 → 새창 (오버레이가 이미지를 덮어 img 클릭이 안 먹던 문제 수정)
+    const delBtn = canEdit(p) ? `<button class="gallery-del-btn">✕</button>` : '';
+    el.innerHTML=`<img src="${p.url}" loading="lazy"/>${delBtn}`;
     el.addEventListener('click',()=>window.open(p.url,'_blank','noopener'));
+    if(delBtn){ const b=el.querySelector('.gallery-del-btn'); b.dataset.src=p.src; b.dataset.mid=p.mid||''; b.dataset.idx=(p.idx!==undefined?p.idx:''); b.dataset.id=p.id||''; b.addEventListener('click',deleteGalleryPhoto); }
     gg.appendChild(el);
   });
+}
+function deleteGalleryPhoto(e){
+  e.stopPropagation();
+  if(!confirm('이 사진을 삭제할까요?')) return;
+  const ds=e.currentTarget.dataset; const d=getS();
+  if(ds.src==='member'){
+    if(d[ds.mid]&&d[ds.mid].photos){ const p=d[ds.mid].photos[parseInt(ds.idx)]; if(p&&p.path) deletePhotoFile(p.path); d[ds.mid].photos.splice(parseInt(ds.idx),1); setS(d); }
+  } else {
+    const arr=getGallery(); const p=arr.find(x=>x.id===ds.id); if(p) deletePhotoFile(p.path); setGallery(arr.filter(x=>x.id!==ds.id));
+  }
+  renderGallery(); updateStats(); addLog('추억 사진 삭제');
 }
 document.getElementById('photo-upload').addEventListener('change',async function(e){
   const files=Array.from(e.target.files); this.value='';
   if(!files.length) return;
-  const arr=getGallery();
+  // 폴더의 구성원에게 추가 (부모 폴더는 아빠에게)
+  const target=(FOLDER_MEMBERS[_galleryFolder]||[_galleryFolder])[0];
   let ok=0, lastErr=null;
   for(const file of files){
     try{
       const out=await fileToCompressedDataUrl(file);
-      const up=await uploadPhoto(out, 'gallery/'+_galleryFolder);
-      arr.push({id:up.id, folder:_galleryFolder, url:up.url, path:up.path, name:file.name.replace(/\.[^.]+$/,''), date:new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'})});
+      const up=await uploadPhoto(out, 'member/'+target);
+      const d=getS(); if(!d[target])d[target]={}; if(!d[target].photos)d[target].photos=[];
+      d[target].photos.push({url:up.url, path:up.path, authorEmail:currentEmail()}); setS(d);
       ok++;
-    }catch(err){ lastErr=err; console.error('갤러리 업로드 오류:', err); }
+    }catch(err){ lastErr=err; console.error('추억 업로드 오류:', err); }
   }
-  if(ok){ setGallery(arr); renderGalleryFolders(); renderGallery(); updateStats(); addLog('사진 '+ok+'장 추가 ('+_galleryFolder+')'); }
+  if(ok){ renderGallery(); updateStats(); addLog('추억 '+ok+'장 추가 ('+_galleryFolder+')'); }
   else alert('사진을 업로드하지 못했어요 🙏\n오류 코드: ' + (lastErr && lastErr.code ? lastErr.code : lastErr));
 });
 function deletePhoto(id,e){
@@ -2783,7 +2809,7 @@ async function onDiaryPhotoSelected(e){
 function updateStats(){
   const d=getS();
   const setTxt=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  setTxt('stat-photos',getGallery().length);
+  setTxt('stat-photos', getGallery().length + getMembers().reduce((n,m)=>{const d=getS();return n+(((d[m.id]&&d[m.id].photos)||[]).length);},0));
   setTxt('stat-diaries',(d.mainDiaries||[]).length);
   setTxt('stat-buckets',(d.buckets||[]).length);
 }
