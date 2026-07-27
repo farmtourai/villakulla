@@ -1045,6 +1045,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <button class="login-btn" onclick="tryLogin()">입장하기</button>
     <div class="login-error" id="login-error"></div>
     <button class="login-forgot" onclick="openRecoverModal()">비밀번호를 잊으셨나요?</button>
+    <button class="login-forgot" onclick="openFindIdModal()" style="display:block;margin-top:8px;">아이디(이메일)가 기억나지 않나요?</button>
   </div>
 </div>
 
@@ -1077,6 +1078,20 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <div class="mini-modal-btns">
       <button class="btn-cancel" onclick="closeMiniModal('recover-modal')">취소</button>
       <button class="btn-ok" onclick="submitRecover()">재설정 메일 보내기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 아이디(이메일) 찾기 모달 -->
+<div class="mini-modal" id="findid-modal">
+  <div class="mini-modal-box">
+    <div class="mini-modal-title">🔎 아이디(이메일) 찾기</div>
+    <p style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:12px;">
+      가족 계정 목록이에요. 본인 것을 찾아 로그인하세요. (보안을 위해 이메일 일부는 가려져 있어요)
+    </p>
+    <div id="findid-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div class="mini-modal-btns" style="margin-top:14px;">
+      <button class="btn-ok" onclick="closeMiniModal('findid-modal')" style="flex:1;">닫기</button>
     </div>
   </div>
 </div>
@@ -1344,6 +1359,11 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
       <button class="admin-btn primary" onclick="saveSettings()" style="margin-bottom:20px;">💾 설정 저장</button>
 
       <div class="admin-divider"></div>
+      <div class="admin-section-title">👪 가입된 가족 이메일</div>
+      <div id="admin-family-emails" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+      <div class="admin-notice">이 목록은 보안 규칙의 허용 이메일과 일치해야 합니다. 계정 추가·삭제는 Firebase 콘솔 → Authentication → Users.</div>
+
+      <div class="admin-divider"></div>
       <div class="admin-section-title">🔑 비밀번호 관리</div>
       <div class="admin-notice" style="background:#eef2ff;border-left-color:#667eea;color:#3b3b6d;">
         로그인은 Firebase 계정(이메일/비밀번호)으로 처리됩니다. 본인 비밀번호 변경은 우측 상단 🔑 버튼을, 잊었을 땐 로그인 화면의 "비밀번호를 잊으셨나요?"를 사용하세요.
@@ -1375,7 +1395,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <button class="nav-logout" onclick="logout()">로그아웃</button>
   </div>
   <div class="hero-inner">
-    <div class="hero-season-label" id="hero-season-label">🌸 봄 · Spring</div>
+    <div class="hero-season-label" id="hero-season-label">🌸 봄</div>
     <div class="hero-line hero-title-line" id="hero-h1">빌레쿨라하우스의</div>
     <div class="hero-line hero-span-line" id="hero-span">소중한 순간들</div>
     <div class="hero-line hero-sub" id="hero-sub-text">함께하는 모든 날이 행복입니다 ✨</div>
@@ -1880,6 +1900,22 @@ function startCloudSync(){
 const ADMIN_EMAILS = ["farmtourai@gmail.com"];
 function isAdminEmail(email){ return !!email && ADMIN_EMAILS.map(e=>e.toLowerCase()).includes(String(email).toLowerCase()); }
 
+// 가족 계정 명단 (아이디 찾기/관리자 확인용). 계정 추가 시 여기와 보안 규칙 둘 다에 추가하세요.
+const FAMILY_ACCOUNTS = [
+  {label:"부모(관리자)", email:"farmtourai@gmail.com"},
+  {label:"큰아들",       email:"moakboy@naver.com"},
+  {label:"딸",           email:"moakangel@naver.com"},
+  {label:"작은아들",     email:"moakman@naver.com"},
+  {label:"막내아들",     email:"moakking@naver.com"}
+];
+// 이메일 일부 가리기 (로그인 화면 노출용): moakboy@naver.com → moa****@naver.com
+function maskEmail(email){
+  const [id,domain]=String(email).split('@');
+  if(!domain) return email;
+  const keep=Math.min(3, id.length);
+  return id.slice(0,keep) + '*'.repeat(Math.max(2, id.length-keep)) + '@' + domain;
+}
+
 let isAdmin = false;
 let isMember = false;   // 로그인한 가족 구성원인지 (수정·삭제 권한)
 let memberIndex = -1;   // (예비) 향후 멤버 매핑용
@@ -1900,10 +1936,10 @@ function getMembers(){ const d=getS(); return d.members||DEFAULT_MEMBERS; }
 function setMembers(m){ const d=getS(); d.members=m; setS(d); }
 
 const SEASONS={
-  spring:{name:"봄",badge:"🌸 봄 · Spring",footer:"🌸",particles:["🌸","🌺","🌼","🌷","✿"]},
-  summer:{name:"여름",badge:"🌊 여름 · Summer",footer:"🌊",particles:["🌊","☀️","🐚","🍉","⛱"]},
-  autumn:{name:"가을",badge:"🍁 가을 · Autumn",footer:"🍁",particles:["🍁","🍂","🌰","🍄","🎃"]},
-  winter:{name:"겨울",badge:"❄️ 겨울 · Winter",footer:"❄️",particles:["❄️","⛄","🌨","✨","🔮"]},
+  spring:{name:"봄",badge:"🌸 봄",footer:"🌸",particles:["🌸","🌺","🌼","🌷","✿"]},
+  summer:{name:"여름",badge:"🌊 여름",footer:"🌊",particles:["🌊","☀️","🐚","🍉","⛱"]},
+  autumn:{name:"가을",badge:"🍁 가을",footer:"🍁",particles:["🍁","🍂","🌰","🍄","🎃"]},
+  winter:{name:"겨울",badge:"❄️ 겨울",footer:"❄️",particles:["❄️","⛄","🌨","✨","🔮"]},
 };
 let curSeason="spring";
 
@@ -2106,6 +2142,17 @@ async function submitRecover(){
     if(e.code==='auth/invalid-email'){ err.textContent='이메일 형식이 올바르지 않아요.'; }
     else { closeMiniModal('recover-modal'); alert('해당 이메일이 가입돼 있다면 재설정 메일이 발송됩니다. 메일함을 확인해주세요.'); }
   }
+}
+
+// 아이디(이메일) 찾기 = 가족 계정 목록을 (일부 가려서) 보여줌
+function openFindIdModal(){
+  const el=document.getElementById('findid-list');
+  el.innerHTML=FAMILY_ACCOUNTS.map(a=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;">
+      <span style="font-size:13px;font-weight:700;flex:0 0 70px;">${a.label}</span>
+      <span style="font-size:13px;color:var(--text);font-family:monospace;">${maskEmail(a.email)}</span>
+    </div>`).join('');
+  document.getElementById('findid-modal').classList.add('open');
 }
 
 function init(){
@@ -2928,6 +2975,20 @@ function openAdmin(){
   refreshAdminDashboard();
   refreshAdminContent();
   refreshAdminSettings();
+  renderAdminFamilyEmails();
+}
+function renderAdminFamilyEmails(){
+  const el=document.getElementById('admin-family-emails');
+  if(!el) return;
+  const me=(auth.currentUser&&auth.currentUser.email||'').toLowerCase();
+  el.innerHTML=FAMILY_ACCOUNTS.map(a=>{
+    const isMe=a.email.toLowerCase()===me;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f8f8f8;border-radius:8px;">
+      <span style="font-size:12px;font-weight:700;color:#555;flex:0 0 78px;">${a.label}</span>
+      <span style="font-size:12.5px;color:#333;font-family:monospace;flex:1;word-break:break-all;">${a.email}</span>
+      ${isMe?'<span style="font-size:10px;font-weight:700;color:#667eea;background:#eef2ff;padding:2px 7px;border-radius:10px;white-space:nowrap;">나</span>':''}
+    </div>`;
+  }).join('');
 }
 async function adminSendReset(){
   const inp=document.getElementById('apw-reset-email');
