@@ -928,6 +928,9 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 /* 섹션 전환 */
 .page-section{display:none !important;}
 .page-section.active{display:block !important;animation:fadeSlideIn 0.3s ease;}
+/* 게스트(로그아웃): 홈만 보이고 다른 섹션·편집 UI 숨김 */
+.guest-mode #left-sidebar .sidebar-item:not([data-page="home"]){display:none !important;}
+.guest-mode .member-only{display:none !important;}
 @keyframes fadeSlideIn{
   from{opacity:0;transform:translateX(18px);}
   to{opacity:1;transform:translateX(0);}
@@ -1485,7 +1488,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <div class="widget">
       <div class="widget-label">🪣 가족 버킷리스트</div>
       <div class="bucket-list" id="bucket-list"></div>
-      <div class="bucket-input-row">
+      <div class="bucket-input-row member-only">
         <input type="text" class="bucket-input" id="bucket-input" placeholder="이루고 싶은 것..." maxlength="40"/>
         <button class="bucket-submit" onclick="addBucket()">추가</button>
       </div>
@@ -1804,12 +1807,17 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v33 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v34 · 2026-07-27</span>
 </footer>
 
 <script>
 // ── 사이드바 페이지 전환 ──
 function showPage(pageId) {
+  // 게스트(로그아웃)는 홈 화면만 볼 수 있음
+  if(!isMember && pageId!=='home'){
+    openLogin();
+    return;
+  }
   // 모든 page-section 숨기기
   document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
   // 사이드바 active 상태 업데이트
@@ -2077,6 +2085,7 @@ auth.onAuthStateChanged(user=>{
   if(!appInitialized){ appInitialized=true; safeInit(); }
   if(user){
     isMember=true; isAdmin=isAdminEmail(user.email);
+    document.body.classList.remove('guest-mode');
     document.body.classList.toggle('is-admin', isAdmin);
     overlay.classList.add('hide');
     setTimeout(()=>overlay.style.display='none',800);
@@ -2089,6 +2098,9 @@ auth.onAuthStateChanged(user=>{
   }else{
     isMember=false; isAdmin=false;
     document.body.classList.remove('is-admin');
+    document.body.classList.add('guest-mode');   // 게스트: 홈만 보기, 편집 숨김
+    // 다른 섹션을 보고 있었다면 홈으로 되돌림
+    if(typeof showPage==='function') showPage('home');
     overlay.classList.add('hide'); overlay.style.display='none';   // 게스트: 로그인 화면 숨김
     document.getElementById('mypw-btn').classList.remove('show');
     document.getElementById('admin-badge-btn').classList.remove('show');
@@ -2118,7 +2130,7 @@ document.getElementById('diary-photo-input').addEventListener('change',onDiaryPh
   const ed=document.getElementById('main-diary-body');
   if(ed){ ['keyup','mouseup','blur'].forEach(evt=>ed.addEventListener(evt,saveDiaryRange)); }
 })();
-function logout(){ if(confirm("로그아웃 할까요?")){ try{ localStorage.removeItem(SK); }catch(_){}; auth.signOut().finally(()=>location.reload()); } }
+function logout(){ if(confirm("로그아웃 할까요?")){ auth.signOut().finally(()=>location.reload()); } }
 
 
 // ── 비밀번호 변경/찾기 UI ──
@@ -2416,6 +2428,7 @@ function renderHomeBoard(){
 }
 let _homeUploadIdx=null;
 function triggerHomeUpload(idx){
+  if(!isMember){ openLogin(); return; }
   _homeUploadIdx=idx;
   const input=document.getElementById('home-photo-input');
   input.value='';
@@ -2461,6 +2474,7 @@ async function onHomePhotoSelected(e){
   }
 }
 function deleteHomePhoto(idx){
+  if(!isMember){ openLogin(); return; }
   if(!confirm('이 사진을 삭제할까요?')) return;
   const map=getHomePhotos();
   if(map[idx]){ deletePhotoFile(map[idx].path); delete map[idx]; setHomePhotos(map); }
@@ -2587,12 +2601,13 @@ function renderBuckets(){
   updateStats();
 }
 function addBucket(){
+  if(!isMember){ openLogin(); return; }
   const inp=document.getElementById('bucket-input'); const t=inp.value.trim(); if(!t)return;
   const d=getS(); if(!d.buckets)d.buckets=[]; d.buckets.push({text:t,done:false}); setS(d); inp.value=''; renderBuckets(); addLog('버킷 추가: '+t);
 }
 document.getElementById('bucket-input').addEventListener('keydown',e=>{if(e.key==='Enter')addBucket();});
-function toggleBucket(i){const d=getS();d.buckets[i].done=!d.buckets[i].done;setS(d);renderBuckets();}
-function delBucket(e,i){e.stopPropagation();if(!confirm("삭제?"))return;const d=getS();d.buckets.splice(i,1);setS(d);renderBuckets();}
+function toggleBucket(i){if(!isMember){openLogin();return;}const d=getS();d.buckets[i].done=!d.buckets[i].done;setS(d);renderBuckets();}
+function delBucket(e,i){e.stopPropagation();if(!isMember){openLogin();return;}if(!confirm("삭제?"))return;const d=getS();d.buckets.splice(i,1);setS(d);renderBuckets();}
 
 // ── 투표 ──
 function renderPoll(){
@@ -2610,8 +2625,8 @@ function renderPoll(){
     </div>`;
   }).join('')}</div><div class="poll-total">총 ${total}표</div>`;
 }
-function votePoll(i){const d=getS();if(!d.poll||d.poll.voted!=null)return;d.poll.votes[i]++;d.poll.voted=i;setS(d);renderPoll();}
-function openPollModal(){document.getElementById('poll-modal').classList.add('open');}
+function votePoll(i){if(!isMember){openLogin();return;}const d=getS();if(!d.poll||d.poll.voted!=null)return;d.poll.votes[i]++;d.poll.voted=i;setS(d);renderPoll();}
+function openPollModal(){if(!isMember){openLogin();return;}document.getElementById('poll-modal').classList.add('open');}
 function closePollModal(){document.getElementById('poll-modal').classList.remove('open');}
 function savePoll(){
   const q=document.getElementById('poll-q-input').value.trim();
