@@ -100,6 +100,10 @@ nav{display:none;}
 .s-btn{display:none;}
 .nav-logout{background:none;border:1px solid rgba(255,255,255,0.4);padding:5px 14px;border-radius:20px;font-size:12px;color:rgba(255,255,255,0.85);cursor:pointer;font-family:inherit;transition:all 0.2s;}
 .nav-logout:hover{border-color:white;color:white;}
+.nav-login{background:rgba(255,255,255,0.92);border:none;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;color:var(--season-hero2,#c44);cursor:pointer;font-family:inherit;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+.nav-login:hover{background:#fff;transform:translateY(-1px);}
+.login-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:#fff;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.login-close:hover{background:rgba(255,255,255,0.3);}
 .admin-badge{display:none;background:rgba(255,255,255,0.2);color:white;padding:5px 12px;border-radius:14px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,0.4);font-family:inherit;transition:all 0.2s;backdrop-filter:blur(4px);}
 .admin-badge.show{display:inline-flex;align-items:center;gap:4px;}
 .admin-badge:hover{background:rgba(255,255,255,0.3);}
@@ -1036,7 +1040,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 <body class="spring">
 
 <!-- 로그인 -->
-<div id="login-overlay">
+<div id="login-overlay" style="display:none;">
   <div class="login-bg"></div>
   <div class="login-aurora">
     <div class="aurora-blob a1"></div>
@@ -1045,6 +1049,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   </div>
   <div class="login-particles" id="login-particles"></div>
   <div class="login-box">
+    <button class="login-close" onclick="closeLogin()" title="닫기">✕</button>
     <div class="login-season-badge" id="login-season-badge">🌸 봄</div>
     <div class="login-emoji">🏠</div>
     <div class="login-title">빌레쿨라하우스</div>
@@ -1404,7 +1409,8 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <div class="hero-topbar">
     <button class="admin-badge" id="admin-badge-btn" onclick="openAdmin()">🔧 관리자</button>
     <button class="mypw-btn" id="mypw-btn" onclick="openMyPwModal()">🔑 비밀번호</button>
-    <button class="nav-logout" onclick="logout()">로그아웃</button>
+    <button class="nav-login" id="login-btn-top" onclick="openLogin()">🔑 로그인</button>
+    <button class="nav-logout" id="logout-btn-top" onclick="logout()" style="display:none;">로그아웃</button>
   </div>
   <div class="hero-inner">
     <div class="hero-season-label" id="hero-season-label">🌸 봄</div>
@@ -1798,7 +1804,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v32 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v33 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -2065,6 +2071,10 @@ async function tryLogin(){
 // 로그인 상태 변화 감지 → 화면 전환
 auth.onAuthStateChanged(user=>{
   const overlay=document.getElementById('login-overlay');
+  const loginBtn=document.getElementById('login-btn-top');
+  const logoutBtn=document.getElementById('logout-btn-top');
+  // 로그인 여부와 무관하게 홈 화면(셸)은 항상 렌더 → 접속 시 로그인 화면이 먼저 뜨지 않음
+  if(!appInitialized){ appInitialized=true; safeInit(); }
   if(user){
     isMember=true; isAdmin=isAdminEmail(user.email);
     document.body.classList.toggle('is-admin', isAdmin);
@@ -2072,18 +2082,33 @@ auth.onAuthStateChanged(user=>{
     setTimeout(()=>overlay.style.display='none',800);
     document.getElementById('mypw-btn').classList.add('show');
     if(isAdmin) document.getElementById('admin-badge-btn').classList.add('show');
-    if(!appInitialized){ appInitialized=true; safeInit(); }
+    if(loginBtn) loginBtn.style.display='none';
+    if(logoutBtn) logoutBtn.style.display='';
     startCloudSync();   // 가족 간 실시간 데이터 동기화 시작
     addLog((isAdmin?'관리자':'가족')+' 로그인: '+user.email);
   }else{
     isMember=false; isAdmin=false;
     document.body.classList.remove('is-admin');
-    overlay.style.display='flex';
-    overlay.classList.remove('hide');
+    overlay.classList.add('hide'); overlay.style.display='none';   // 게스트: 로그인 화면 숨김
     document.getElementById('mypw-btn').classList.remove('show');
     document.getElementById('admin-badge-btn').classList.remove('show');
+    if(loginBtn) loginBtn.style.display='';
+    if(logoutBtn) logoutBtn.style.display='none';
   }
 });
+// 로그인 화면 열기/닫기 (버튼으로만 표시)
+function openLogin(){
+  const o=document.getElementById('login-overlay');
+  o.style.display='flex';
+  o.classList.remove('hide');
+  const err=document.getElementById('login-error'); if(err) err.textContent='';
+  const em=document.getElementById('email-input'); if(em) setTimeout(()=>em.focus(),50);
+}
+function closeLogin(){
+  const o=document.getElementById('login-overlay');
+  o.classList.add('hide');
+  setTimeout(()=>o.style.display='none',400);
+}
 ['email-input','pw-input'].forEach(id=>{
   document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
 });
@@ -2093,7 +2118,7 @@ document.getElementById('diary-photo-input').addEventListener('change',onDiaryPh
   const ed=document.getElementById('main-diary-body');
   if(ed){ ['keyup','mouseup','blur'].forEach(evt=>ed.addEventListener(evt,saveDiaryRange)); }
 })();
-function logout(){ if(confirm("로그아웃 할까요?")){ auth.signOut().finally(()=>location.reload()); } }
+function logout(){ if(confirm("로그아웃 할까요?")){ try{ localStorage.removeItem(SK); }catch(_){}; auth.signOut().finally(()=>location.reload()); } }
 
 
 // ── 비밀번호 변경/찾기 UI ──
