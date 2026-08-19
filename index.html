@@ -1825,7 +1825,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v49 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v50 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -1861,14 +1861,22 @@ function syncSidebarHeight(){
   const homeActive = document.getElementById('home-page') &&
     document.getElementById('home-page').classList.contains('active');
   const landscapeBar = window.matchMedia && window.matchMedia('(orientation:landscape) and (max-height:500px)').matches;
-  const setH=(el, minW)=>{
-    if(!el) return;
-    if(!board || !homeActive || window.innerWidth<=minW || landscapeBar){ el.style.height=''; return; }
+  const targetH=(el, minW)=>{
+    if(!el || !board || !homeActive || window.innerWidth<=minW || landscapeBar) return null;
     const h = Math.round(board.getBoundingClientRect().bottom - el.getBoundingClientRect().top);
-    if(h>140) el.style.height = h + 'px'; else el.style.height='';
+    return h>140 ? h : null;
   };
-  setH(document.getElementById('left-sidebar'), 640);   // 좌측 사이드바는 ≤640에서 가로바
-  setH(document.getElementById('dday-rail'), 900);      // 우측 레일은 ≤900에서 정적 배치
+  // 좌측 사이드바: 사진 밑선에 맞춤(고정)
+  const sb=document.getElementById('left-sidebar');
+  const hSb=targetH(sb,640);
+  if(sb) sb.style.height = hSb ? hSb+'px' : '';
+  // 우측 레일: 밑선에 맞추되(최소높이), 내용이 많으면 늘어나 잘리지 않게
+  const rail=document.getElementById('dday-rail');
+  const hR=targetH(rail,900);
+  if(rail){
+    if(hR){ rail.style.minHeight=hR+'px'; rail.style.height=''; rail.style.maxHeight='none'; rail.style.overflowY='visible'; }
+    else { rail.style.minHeight=''; rail.style.height=''; rail.style.maxHeight=''; rail.style.overflowY=''; }
+  }
 }
 window.addEventListener('resize', syncSidebarHeight);
 
