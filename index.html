@@ -140,14 +140,32 @@ nav{display:none;}
 
 /* ── 홈 레이아웃 (좌 사진보드 3/4 + 우 위젯 1/4) ── */
 .home-layout{
-  display:block;
+  display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;
   max-width:1200px;margin:0 auto;padding:18px 18px 8px;
   position:relative;z-index:1;
 }
 .home-photo-board{
   display:grid;gap:10px;
-  min-height:auto;max-width:620px;
+  min-height:auto;flex:0 1 620px;max-width:620px;min-width:280px;
 }
+/* ── 우리의 꿈·소망·다짐 (사진과 우측 바 사이) ── */
+.dreams-wrap{flex:1 1 260px;min-width:240px;}
+.dreams-title{font-size:15px;font-weight:700;color:var(--season-accent);margin:2px 0 12px;display:flex;align-items:center;gap:6px;}
+.dreams-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.dream-note{
+  --note-bg:#FFF3C4;
+  background:var(--note-bg);border-radius:12px;padding:11px 12px 12px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.10);
+  display:flex;flex-direction:column;min-height:122px;
+  transition:transform 0.16s,box-shadow 0.16s;
+}
+.dream-note:hover{transform:translateY(-3px) rotate(0deg)!important;box-shadow:0 10px 22px rgba(0,0,0,0.15);}
+.dream-note-head{font-size:12.5px;font-weight:700;color:#5a4a2a;display:flex;align-items:center;gap:5px;margin-bottom:7px;padding-bottom:6px;border-bottom:1px dashed rgba(0,0,0,0.14);}
+.dream-note-body{flex:1;font-size:12.5px;line-height:1.55;color:#3a3320;outline:none;white-space:pre-wrap;word-break:break-word;}
+.dream-note-body[contenteditable="true"]{cursor:text;}
+.dream-note-body[contenteditable="true"]:focus{background:rgba(255,255,255,0.55);border-radius:6px;padding:2px 4px;margin:-2px -4px;}
+.dream-note-body:empty::before{content:attr(data-ph);color:rgba(0,0,0,0.33);font-size:11.5px;}
+@media(max-width:560px){ .dreams-board{grid-template-columns:1fr 1fr;} }
 /* 위젯 열의 마지막(버킷리스트)이 아래까지 늘어나 사진보드 하단과 일직선 */
 .home-widgets-col .widget:last-child{flex:1;display:flex;flex-direction:column;}
 .home-widgets-col .widget:last-child .bucket-list{flex:1;overflow-y:auto;min-height:60px;}
@@ -1505,6 +1523,11 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 <div class="home-layout">
   <!-- 가족 사진 분할 보드 -->
   <div class="home-photo-board" id="home-photo-board"></div>
+  <!-- 우리의 꿈·소망·다짐 (가족 6명 각자의 메모) -->
+  <div class="dreams-wrap">
+    <div class="dreams-title">✨ 우리의 꿈 · 소망 · 다짐</div>
+    <div class="dreams-board" id="dreams-board"></div>
+  </div>
 </div>
 
 <input type="file" id="home-photo-input" accept="image/*" style="display:none"/>
@@ -1827,7 +1850,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v52 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v53 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -2128,7 +2151,7 @@ auth.onAuthStateChanged(user=>{
   const loginBtn=document.getElementById('login-btn-top');
   const logoutBtn=document.getElementById('logout-btn-top');
   // 로그인 여부와 무관하게 홈 화면(셸)은 항상 렌더 → 접속 시 로그인 화면이 먼저 뜨지 않음
-  if(!appInitialized){ appInitialized=true; safeInit(); }
+  appInitialized=true;
   if(user){
     isMember=true; isAdmin=isAdminEmail(user.email);
     document.body.classList.remove('guest-mode');
@@ -2153,6 +2176,7 @@ auth.onAuthStateChanged(user=>{
     if(loginBtn) loginBtn.style.display='';
     if(logoutBtn) logoutBtn.style.display='none';
   }
+  safeInit();   // 권한(isMember) 확정 후 렌더 → 꿈 메모 등 편집 상태 반영
 });
 // 로그인 화면 열기/닫기 (버튼으로만 표시)
 function openLogin(){
@@ -2250,6 +2274,34 @@ function openFindIdModal(){
   document.getElementById('findid-modal').classList.add('open');
 }
 
+// ── 우리의 꿈·소망·다짐 (가족 6명 메모) ──
+const DREAM_COLORS=['#FFF3C4','#FFD8E4','#D4F0E0','#D9E8FF','#EFE0FF','#FFE4CC'];
+function getDreams(){ const d=getS(); return d.dreams||{}; }
+function renderDreams(){
+  const wrap=document.getElementById('dreams-board');
+  if(!wrap) return;
+  // 편집 중이면 재렌더 건너뜀(입력 보존)
+  if(wrap.contains(document.activeElement)) return;
+  const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const members=getMembers().slice(0,6);
+  const dreams=getDreams();
+  wrap.innerHTML=members.map((m,i)=>{
+    const txt=dreams[m.id]||'';
+    const rot=(i%2?1:-1)*(1+ (i%3)*0.4);
+    const edit = isMember;
+    return `<div class="dream-note" style="--note-bg:${DREAM_COLORS[i%6]};transform:rotate(${rot.toFixed(1)}deg);">
+      <div class="dream-note-head">${m.emoji||'👤'} <span>${esc(m.name)}</span></div>
+      <div class="dream-note-body"${edit?` contenteditable="true" onblur="saveDream('${m.id}',this)"`:''} data-ph="${edit?'꿈·소망·다짐을 적어보세요 ✍️':'로그인하면 작성할 수 있어요'}">${esc(txt)}</div>
+    </div>`;
+  }).join('');
+}
+function saveDream(id, el){
+  if(!isMember) return;
+  const txt=el.innerText.replace(/ /g,' ').trim();
+  const d=getS(); if(!d.dreams)d.dreams={}; d.dreams[id]=txt; setS(d);
+  addLog('꿈·소망·다짐 저장: '+id);
+}
+
 function init(){
   const d=getS();
   if(d.season) setSeason(d.season);
@@ -2259,7 +2311,7 @@ function init(){
   // 각 렌더를 독립 실행 — 하나가 실패해도 나머지는 계속
   [renderGallery,renderMainDiary,renderDdays,renderBuckets,renderHomeBoard,updateStats,
    renderMembersGrid,renderCalendar,renderStory,renderCheerBoards,
-   initRoulette,renderMissions,
+   initRoulette,renderMissions,renderDreams,
    refreshAdminMemberList,renderAdminAnniversaries,renderAdminMemorials,renderAdminStories].forEach(fn=>{
     try{ fn(); }catch(e){ console.error(fn.name+' 오류:',e); }
   });
