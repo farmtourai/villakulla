@@ -234,7 +234,13 @@ nav{display:none;}
 .dday-add:hover{border-color:var(--season-accent);color:var(--season-accent);}
 
 .bucket-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:200px;overflow-y:auto;}
-.bucket-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--bg);cursor:pointer;transition:background 0.2s;}
+.bucket-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;background:var(--bg);cursor:pointer;transition:background 0.2s;}
+/* 내용 앞 마커: 세로 액센트 막대 */
+.bucket-marker{flex-shrink:0;width:4px;height:15px;border-radius:3px;background:linear-gradient(180deg,var(--season-accent),var(--season-accent2,var(--season-hero1)));}
+.bucket-item.done .bucket-marker{background:var(--border);}
+/* 삭제 버튼은 hover 시에만 */
+.bucket-item .bucket-del{opacity:0;transition:opacity 0.15s;}
+.bucket-item:hover .bucket-del{opacity:1;}
 .bucket-item:hover{background:var(--border);}
 .bucket-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:all 0.2s;}
 .bucket-item.done .bucket-check{background:var(--season-accent);border-color:var(--season-accent);color:white;}
@@ -861,7 +867,11 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 /* 사이드바 하단 버킷리스트 */
 .sidebar-bucket{margin-top:auto;padding:13px 12px 14px;box-shadow:none;border:1px solid var(--border);}
 .sidebar-bucket .widget-label{margin-bottom:8px;}
-.sidebar-bucket .bucket-list{max-height:150px;margin-bottom:8px;}
+.sidebar-bucket .bucket-list{max-height:200px;margin-bottom:8px;gap:5px;}
+.sidebar-bucket .bucket-item{padding:5px 8px;gap:7px;}
+.sidebar-bucket .bucket-text{font-size:11.5px;line-height:1.35;flex:1;min-width:0;word-break:break-all;}
+.sidebar-bucket .bucket-marker{height:13px;}
+.sidebar-bucket .bucket-del{font-size:12px;padding:0 2px;}
 .sidebar-bucket .bucket-input-row{gap:5px;}
 .sidebar-bucket .bucket-input{min-width:0;padding:7px 9px;font-size:12px;}
 .sidebar-bucket .bucket-submit{padding:7px 10px;font-size:12px;}
@@ -1817,7 +1827,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v44 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v45 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -1844,7 +1854,23 @@ function showPage(pageId) {
   if (activeBtn) activeBtn.classList.add('active');
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  syncSidebarHeight();
 }
+
+// ── 좌측 사이드바 세로 길이를 홈 사진 보드 밑선에 맞춤 (데스크톱, 홈 화면 한정) ──
+function syncSidebarHeight(){
+  const sb=document.getElementById('left-sidebar');
+  const board=document.getElementById('home-photo-board');
+  if(!sb) return;
+  const horizontal = window.innerWidth<=640 ||
+    (window.matchMedia && window.matchMedia('(orientation:landscape) and (max-height:500px)').matches);
+  const homeActive = document.getElementById('home-page') &&
+    document.getElementById('home-page').classList.contains('active');
+  if(horizontal || !homeActive || !board){ sb.style.height=''; return; }  // 그 외엔 기본값
+  const h = Math.round(board.getBoundingClientRect().bottom - sb.getBoundingClientRect().top);
+  if(h>140) sb.style.height = h + 'px';
+}
+window.addEventListener('resize', syncSidebarHeight);
 
 // ── 데이터 저장 (localStorage) ──
 const SK = "vilecullah_v3";
@@ -2436,6 +2462,7 @@ function renderHomeBoard(){
     }
   }
   board.innerHTML=html;
+  if(typeof syncSidebarHeight==='function') requestAnimationFrame(syncSidebarHeight);
 }
 let _homeUploadIdx=null;
 function triggerHomeUpload(idx){
@@ -2605,9 +2632,9 @@ function renderBuckets(){
   const d=getS(); const list=d.buckets||[];
   document.getElementById('bucket-list').innerHTML=list.length===0?'<p style="color:var(--muted);font-size:13px;padding:10px 0;">이루고 싶은 것들을 추가해보세요! 🌟</p>':
     list.map((b,i)=>`<div class="bucket-item${b.done?' done':''}" onclick="toggleBucket(${i})">
-      <div class="bucket-check">${b.done?'✓':''}</div>
+      <span class="bucket-marker"></span>
       <div class="bucket-text">${b.text}</div>
-      <button class="bucket-del" onclick="delBucket(event,${i})">✕</button>
+      <button class="bucket-del" onclick="delBucket(event,${i})" title="삭제">✕</button>
     </div>`).join('');
   updateStats();
 }
