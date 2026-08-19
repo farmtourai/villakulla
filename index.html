@@ -920,7 +920,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   display:flex;align-items:center;gap:6px;
 }
 .dday-group-label:first-of-type{margin-top:2px;}
-.dday-group-label::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--season-accent);}
+.dday-group-label::before{display:none;}
 .dday-empty{font-size:11px;color:var(--muted);padding:6px 2px;}
 /* 우측 패널 카드 정제 */
 #dday-rail .dday-item{
@@ -1825,7 +1825,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v50 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v51 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -2369,13 +2369,13 @@ function renderDdays(){
   const bdays = getBirthdayItems().sort(byUpcoming);
   const annis = getAnniversaryItems().sort(byUpcoming);
   const memos = getMemorialItems().sort(byUpcoming);
-  const rowHtml = (item, strip)=>{
+  const rowHtml = (item, strip, hideEmoji)=>{
     const isLunar = item.calType === 'lunar';
     const dateLabel = item.date.slice(5).replace('-','/') + (isLunar ? ' <span class="lunar-badge">음</span>' : '');
     let nm = item.name;
     if(strip) nm = nm.replace(strip,'').trim();
     return `<div class="dday-item">
-      <span class="dday-emoji">${item.emoji}</span>
+      ${hideEmoji?'':`<span class="dday-emoji">${item.emoji}</span>`}
       <span class="dday-name">${nm}</span>
       <span class="dday-date">${dateLabel}</span>
       <span class="dday-num">${calcDday(item)}</span>
@@ -2387,9 +2387,9 @@ function renderDdays(){
     '<div class="dday-group-label">🎂 가족 생일</div>' +
     (bdays.length ? bdays.map(i=>rowHtml(i,/\s*생일\s*$/)).join('') : '<div class="dday-empty">가족 생일 정보가 없어요</div>') +
     '<div class="dday-group-label">🎉 기념일</div>' +
-    (annis.length ? annis.map(i=>rowHtml(i,/\s*기념일\s*$/)).join('') : '<div class="dday-empty">관리자에서 기념일을 추가하세요</div>') +
+    (annis.length ? annis.map(i=>rowHtml(i,/\s*기념일\s*$/,true)).join('') : '<div class="dday-empty">관리자에서 기념일을 추가하세요</div>') +
     '<div class="dday-group-label">🕊️ 추모일</div>' +
-    (memos.length ? memos.map(i=>rowHtml(i,/\s*기일\s*$/)).join('') : '<div class="dday-empty">관리자에서 추모일을 추가하세요</div>');
+    (memos.length ? memos.map(i=>rowHtml(i,/\s*기일\s*$/,true)).join('') : '<div class="dday-empty">관리자에서 추모일을 추가하세요</div>');
 }
 // 정렬용: 다가오는 일수
 function ddayDiff(item){
