@@ -146,33 +146,36 @@ nav{display:none;}
 }
 .home-photo-board{
   display:grid;gap:10px;
-  min-height:auto;flex:0 1 620px;max-width:620px;min-width:340px;
+  min-height:auto;flex:0 1 580px;max-width:580px;min-width:320px;
 }
-/* ── 우리의 꿈·소망·다짐 (사진과 우측 바 사이의 좁은 공간) ── */
-.dreams-wrap{flex:1 1 130px;min-width:130px;}
-.dreams-title{font-size:13px;font-weight:700;color:var(--season-accent);margin:0 0 8px;display:flex;align-items:center;gap:5px;line-height:1.2;}
-.dreams-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+/* ── 우리의 꿈·소망·다짐 : 6명 세로 그림판 (사진과 우측 바 사이) ── */
+.dreams-wrap{flex:1 1 280px;min-width:250px;display:flex;flex-direction:column;}
+.dreams-title{font-size:13px;font-weight:700;color:var(--season-accent);margin:0 0 7px;display:flex;align-items:center;gap:5px;line-height:1.2;flex-shrink:0;}
+.dream-tools{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0;}
+.dream-color{width:19px;height:19px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.18);cursor:pointer;padding:0;}
+.dream-color.active{box-shadow:0 0 0 2px var(--season-accent);transform:scale(1.12);}
+.dream-eraser{background:#fff;border:1px solid var(--border);border-radius:8px;font-size:10px;color:#888;cursor:pointer;padding:3px 8px;}
+.dream-eraser.active{border-color:var(--season-accent);color:var(--season-accent);}
+.dreams-board{display:flex;flex-direction:column;gap:8px;}
 .dream-note{
   --note-bg:#FFF3C4;
-  background:var(--note-bg);border-radius:10px;padding:8px 9px 9px;
+  background:var(--note-bg);border-radius:10px;padding:6px 7px 7px;
   box-shadow:0 3px 10px rgba(0,0,0,0.10);
-  display:flex;flex-direction:column;min-height:84px;
-  transition:transform 0.16s,box-shadow 0.16s;
+  display:flex;flex-direction:column;flex:1;min-height:66px;
 }
-.dream-note:hover{transform:translateY(-2px) rotate(0deg)!important;box-shadow:0 8px 18px rgba(0,0,0,0.15);}
-.dream-note-head{font-size:11px;font-weight:700;color:#5a4a2a;display:flex;align-items:center;gap:4px;margin-bottom:5px;padding-bottom:4px;border-bottom:1px dashed rgba(0,0,0,0.14);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.dream-note-body{flex:1;font-size:11px;line-height:1.5;color:#3a3320;outline:none;white-space:pre-wrap;word-break:break-word;}
-.dream-note-body[contenteditable="true"]{cursor:text;}
-.dream-note-body[contenteditable="true"]:focus{background:rgba(255,255,255,0.6);border-radius:5px;padding:2px 3px;margin:-2px -3px;}
-.dream-note-body:empty::before{content:attr(data-ph);color:rgba(0,0,0,0.32);font-size:10px;}
-/* 태블릿·모바일: 사진 아래로 내려가고 넓게 3열 */
+.dream-note-head{font-size:10.5px;font-weight:700;color:#5a4a2a;display:flex;align-items:center;gap:4px;margin-bottom:4px;flex-shrink:0;}
+.dream-note-head .dream-clear{margin-left:auto;background:rgba(0,0,0,0.06);border:none;border-radius:6px;font-size:9.5px;color:#7a6a4a;cursor:pointer;padding:2px 6px;}
+.dream-note-head .dream-clear:hover{background:rgba(0,0,0,0.13);}
+.dream-canvas{flex:1;width:100%;min-height:0;background:#fff;border-radius:6px;border:1px solid rgba(0,0,0,0.10);touch-action:none;display:block;}
+.dream-canvas.editable{cursor:crosshair;}
+/* 태블릿·모바일: 사진 아래로 내려가고 가로 3열 */
 @media(max-width:900px){
   .home-layout{flex-wrap:wrap;}
   .dreams-wrap{flex:1 1 100%;min-width:0;}
-  .dreams-board{grid-template-columns:repeat(3,minmax(0,1fr));}
-  .dream-note{min-height:110px;}
+  .dreams-board{flex-direction:row;flex-wrap:wrap;}
+  .dream-note{flex:1 1 30%;min-width:150px;min-height:130px;}
 }
-@media(max-width:560px){ .dreams-board{grid-template-columns:1fr 1fr;} }
+@media(max-width:560px){ .dream-note{flex:1 1 45%;} }
 /* 위젯 열의 마지막(버킷리스트)이 아래까지 늘어나 사진보드 하단과 일직선 */
 .home-widgets-col .widget:last-child{flex:1;display:flex;flex-direction:column;}
 .home-widgets-col .widget:last-child .bucket-list{flex:1;overflow-y:auto;min-height:60px;}
@@ -1857,7 +1860,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v54 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v55 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -1909,6 +1912,10 @@ function syncSidebarHeight(){
     if(hR){ rail.style.minHeight=hR+'px'; rail.style.height=''; rail.style.maxHeight='none'; rail.style.overflowY='visible'; }
     else { rail.style.minHeight=''; rail.style.height=''; rail.style.maxHeight=''; rail.style.overflowY=''; }
   }
+  // 꿈 그림판: 사진 밑선에 맞춤 (데스크톱 옆 배치일 때만)
+  const db=document.getElementById('dreams-board');
+  const hD=targetH(db,900);
+  if(db) db.style.height = hD ? hD+'px' : '';
 }
 window.addEventListener('resize', syncSidebarHeight);
 
@@ -2281,32 +2288,67 @@ function openFindIdModal(){
   document.getElementById('findid-modal').classList.add('open');
 }
 
-// ── 우리의 꿈·소망·다짐 (가족 6명 메모) ──
-const DREAM_COLORS=['#FFF3C4','#FFD8E4','#D4F0E0','#D9E8FF','#EFE0FF','#FFE4CC'];
+// ── 우리의 꿈·소망·다짐 : 6명 각자의 그림판(캔버스) ──
+const DREAM_COLORS=['#FFF9D6','#FFE1EA','#DEF3E7','#E0EBFF','#F0E4FF','#FFE9D4']; // 노트 배경
+const PEN_COLORS=['#333333','#E8447A','#2E7DEB','#2F9E63','#F2932E','#8E5BE0'];   // 펜 색
+let _penColor='#333333';
+let _dreamDrawing=false;
 function getDreams(){ const d=getS(); return d.dreams||{}; }
+function setDreamColor(c, btn){
+  _penColor=c;
+  document.querySelectorAll('.dream-color,.dream-eraser').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+function clearDreamCanvas(mid){
+  if(!isMember) return;
+  const cv=document.querySelector('.dream-canvas[data-mid="'+mid+'"]'); if(!cv) return;
+  const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+  saveDreamCanvas(cv);
+}
+function saveDreamCanvas(cv){
+  const d=getS(); if(!d.dreams)d.dreams={}; d.dreams[cv.dataset.mid]=cv.toDataURL('image/png'); setS(d);
+}
+function setupDreamCanvas(cv, saved){
+  const ctx=cv.getContext('2d');
+  cv.width=340; cv.height=64;   // 고정 내부 해상도 (CSS로 표시 크기 맞춤)
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+  if(saved && String(saved).startsWith('data:')){
+    const img=new Image(); img.onload=()=>ctx.drawImage(img,0,0,cv.width,cv.height); img.src=saved;
+  }
+  if(!isMember) return;
+  cv.classList.add('editable');
+  let drawing=false, lx=0, ly=0;
+  const pt=e=>{ const r=cv.getBoundingClientRect(); const t=e.touches&&e.touches[0]; const cx=(t?t.clientX:e.clientX)-r.left; const cy=(t?t.clientY:e.clientY)-r.top; return {x:cx*cv.width/r.width, y:cy*cv.height/r.height}; };
+  const start=e=>{ drawing=true; _dreamDrawing=true; const p=pt(e); lx=p.x; ly=p.y; e.preventDefault(); };
+  const move=e=>{ if(!drawing)return; const p=pt(e); const er=(_penColor==='eraser'); ctx.strokeStyle=er?'#fff':_penColor; ctx.lineWidth=er?16:2.6; ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(p.x,p.y); ctx.stroke(); lx=p.x; ly=p.y; e.preventDefault(); };
+  const end=()=>{ if(!drawing)return; drawing=false; _dreamDrawing=false; saveDreamCanvas(cv); };
+  cv.addEventListener('mousedown',start); cv.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
+  cv.addEventListener('touchstart',start,{passive:false}); cv.addEventListener('touchmove',move,{passive:false}); cv.addEventListener('touchend',end);
+}
 function renderDreams(){
   const wrap=document.getElementById('dreams-board');
   if(!wrap) return;
-  // 편집 중이면 재렌더 건너뜀(입력 보존)
-  if(wrap.contains(document.activeElement)) return;
+  if(_dreamDrawing) return;   // 그리는 중이면 재렌더 건너뜀(그림 보존)
   const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const members=getMembers().slice(0,6);
   const dreams=getDreams();
-  wrap.innerHTML=members.map((m,i)=>{
-    const txt=dreams[m.id]||'';
-    const rot=(i%2?1:-1)*(1+ (i%3)*0.4);
-    const edit = isMember;
-    return `<div class="dream-note" style="--note-bg:${DREAM_COLORS[i%6]};transform:rotate(${rot.toFixed(1)}deg);">
-      <div class="dream-note-head">${m.emoji||'👤'} <span>${esc(m.name)}</span></div>
-      <div class="dream-note-body"${edit?` contenteditable="true" onblur="saveDream('${m.id}',this)"`:''} data-ph="${edit?'꿈·소망·다짐을 적어보세요 ✍️':'로그인하면 작성할 수 있어요'}">${esc(txt)}</div>
-    </div>`;
-  }).join('');
-}
-function saveDream(id, el){
-  if(!isMember) return;
-  const txt=el.innerText.replace(/ /g,' ').trim();
-  const d=getS(); if(!d.dreams)d.dreams={}; d.dreams[id]=txt; setS(d);
-  addLog('꿈·소망·다짐 저장: '+id);
+  const parent=wrap.parentElement;
+  const oldTools=parent.querySelector('.dream-tools'); if(oldTools) oldTools.remove();
+  if(isMember){
+    const tools=`<div class="dream-tools">${
+      PEN_COLORS.map((c,i)=>`<button class="dream-color${i===0?' active':''}" style="background:${c}" title="펜 색" onclick="setDreamColor('${c}',this)"></button>`).join('')
+    }<button class="dream-eraser" title="지우개" onclick="setDreamColor('eraser',this)">지우개</button></div>`;
+    wrap.insertAdjacentHTML('beforebegin', tools);
+    _penColor='#333333';
+  }
+  wrap.innerHTML=members.map((m,i)=>`
+    <div class="dream-note" style="--note-bg:${DREAM_COLORS[i%6]};">
+      <div class="dream-note-head">${m.emoji||'👤'} <span>${esc(m.name)}</span>${isMember?`<button class="dream-clear" title="지우기" onclick="clearDreamCanvas('${m.id}')">지우기</button>`:''}</div>
+      <canvas class="dream-canvas" data-mid="${m.id}"></canvas>
+    </div>`).join('');
+  wrap.querySelectorAll('.dream-canvas').forEach(cv=>setupDreamCanvas(cv, dreams[cv.dataset.mid]));
+  if(typeof syncSidebarHeight==='function') requestAnimationFrame(syncSidebarHeight);
 }
 
 function init(){
