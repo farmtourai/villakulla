@@ -146,7 +146,7 @@ nav{display:none;}
 }
 .home-photo-board{
   display:grid;gap:10px;
-  min-height:calc(100vh - 200px);
+  min-height:auto;
 }
 /* 위젯 열의 마지막(버킷리스트)이 아래까지 늘어나 사진보드 하단과 일직선 */
 .home-widgets-col .widget:last-child{flex:1;display:flex;flex-direction:column;}
@@ -156,7 +156,7 @@ nav{display:none;}
   background:var(--card);border:2px dashed var(--border);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;transition:border-color 0.2s,transform 0.15s;
-  min-height:120px;
+  aspect-ratio:2 / 3;   /* 가로:세로 = 2:3 */
 }
 .home-photo-tile.filled{border-style:solid;cursor:default;}
 .home-photo-tile:hover{border-color:var(--season-accent);}
@@ -1802,7 +1802,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v38 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v39 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -2398,7 +2398,8 @@ function renderHomeBoard(){
   const n=getHomeSplit();
   const g=HOME_GRID[n]||HOME_GRID[2];
   board.style.gridTemplateColumns=g.cols;
-  board.style.gridTemplateRows=g.rows;
+  board.style.gridTemplateRows='';   // 행 높이는 타일의 2:3 비율이 결정
+  board.style.gridAutoRows='auto';
   board.classList.toggle('admin-edit', !!isAdmin);
   const photos=getHomePhotos();
   // 관리자: 드래그로 위치 변경 가능
