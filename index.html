@@ -140,20 +140,23 @@ nav{display:none;}
 
 /* ── 홈 레이아웃 (좌 사진보드 3/4 + 우 위젯 1/4) ── */
 .home-layout{
-  display:flex;gap:16px;
-  max-width:1280px;margin:0 auto;padding:18px 18px 8px;
-  align-items:flex-start;position:relative;z-index:1;
+  display:grid;grid-template-columns:3fr 1fr;gap:16px;
+  max-width:1200px;margin:0 auto;padding:18px 18px 8px;
+  align-items:stretch;position:relative;z-index:1;
 }
 .home-photo-board{
-  display:grid;gap:10px;flex:1 1 0;min-width:0;
+  display:grid;gap:10px;
+  min-height:calc(100vh - 200px);
 }
-.home-widgets-col .bucket-list{overflow-y:auto;}
+/* 위젯 열의 마지막(버킷리스트)이 아래까지 늘어나 사진보드 하단과 일직선 */
+.home-widgets-col .widget:last-child{flex:1;display:flex;flex-direction:column;}
+.home-widgets-col .widget:last-child .bucket-list{flex:1;overflow-y:auto;min-height:60px;}
 .home-photo-tile{
   position:relative;border-radius:16px;overflow:hidden;
   background:var(--card);border:2px dashed var(--border);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;transition:border-color 0.2s,transform 0.15s;
-  min-height:150px;
+  min-height:120px;
 }
 .home-photo-tile.filled{border-style:solid;cursor:default;}
 .home-photo-tile:hover{border-color:var(--season-accent);}
@@ -175,16 +178,11 @@ nav{display:none;}
 .home-photo-tile.dragover::after{content:'여기로 이동';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(232,93,138,0.25);color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.5);pointer-events:none;}
 .home-drag-badge{position:absolute;top:8px;left:8px;z-index:2;background:rgba(0,0,0,0.55);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity 0.2s;}
 .home-photo-tile.filled:hover .home-drag-badge{opacity:1;}
-.home-widgets-col{flex:0 0 360px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start;}
-.home-widgets-col .widget{width:auto;}
-#dday-rail{display:none;}   /* 생일·기념일을 홈 우측 그리드로 옮김 → 좁은 우측 레일 숨김 */
+.home-widgets-col{display:flex;flex-direction:column;gap:14px;}
+.home-widgets-col .widget{width:100%;}
 @media(max-width:900px){
-  .home-layout{flex-direction:column;}
-  .home-widgets-col{flex:none;width:100%;}
+  .home-layout{grid-template-columns:1fr;}
   .home-photo-board{min-height:auto;}
-}
-@media(max-width:560px){
-  .home-widgets-col{grid-template-columns:1fr;}
 }
 
 /* ── 위젯 (리디자인) ── */
@@ -1476,19 +1474,17 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <!-- 좌측 3/4: 사진 분할 보드 -->
   <div class="home-photo-board" id="home-photo-board"></div>
 
-  <!-- 우측: 2×2 위젯 그리드 (생일·기념일 / 미션·버킷) -->
+  <!-- 우측 1/4: 위젯 세로 -->
   <div class="home-widgets-col">
-    <div class="widget">
-      <div class="widget-label">🎂 가족 생일</div>
-      <div class="dday-list" id="home-birthdays"></div>
-    </div>
-    <div class="widget">
-      <div class="widget-label">🎉 기념일 · 추모일</div>
-      <div class="dday-list" id="home-events"></div>
-    </div>
     <div class="widget">
       <div class="widget-label">🎯 오늘의 미션 <span id="mission-date-badge" style="font-size:11px;font-weight:600;color:var(--muted);"></span></div>
       <div class="mission-grid" id="mission-grid"></div>
+    </div>
+    <div class="widget">
+      <div class="widget-label">💬 오늘의 한마디</div>
+      <div class="quote-text" id="quote-text">가족은 우리가 태어난 곳이며, 우리의 성장을 지켜보는 곳입니다.</div>
+      <div class="quote-author" id="quote-author">— 작자 미상</div>
+      <button class="quote-refresh" onclick="newQuote()">🔄 다른 명언 보기</button>
     </div>
     <div class="widget">
       <div class="widget-label">🪣 가족 버킷리스트</div>
@@ -1812,7 +1808,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v36 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v35 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -2339,10 +2335,11 @@ function renderDdays(){
       <div class="dday-num">${calcDday(item)}</div>
     </div>`;
   };
-  const bEl=document.getElementById('home-birthdays');
-  if(bEl) bEl.innerHTML = bdays.length ? bdays.map(rowHtml).join('') : '<div class="dday-empty">가족 생일 정보가 없어요</div>';
-  const eEl=document.getElementById('home-events');
-  if(eEl) eEl.innerHTML =
+  const el=document.getElementById('dday-list');
+  if(!el) return;
+  el.innerHTML =
+    '<div class="dday-group-label">🎂 가족 생일</div>' +
+    (bdays.length ? bdays.map(rowHtml).join('') : '<div class="dday-empty">가족 생일 정보가 없어요</div>') +
     '<div class="dday-group-label">🎉 기념일</div>' +
     (annis.length ? annis.map(rowHtml).join('') : '<div class="dday-empty">관리자에서 기념일을 추가하세요</div>') +
     '<div class="dday-group-label">🕊️ 추모일</div>' +
