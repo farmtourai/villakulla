@@ -858,6 +858,13 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 
 .sidebar-logo{display:none;}
 .sidebar-divider{display:none;}
+/* 사이드바 하단 버킷리스트 */
+.sidebar-bucket{margin-top:auto;padding:13px 12px 14px;box-shadow:none;border:1px solid var(--border);}
+.sidebar-bucket .widget-label{margin-bottom:8px;}
+.sidebar-bucket .bucket-list{max-height:150px;margin-bottom:8px;}
+.sidebar-bucket .bucket-input-row{gap:5px;}
+.sidebar-bucket .bucket-input{min-width:0;padding:7px 9px;font-size:12px;}
+.sidebar-bucket .bucket-submit{padding:7px 10px;font-size:12px;}
 
 .sidebar-item{
   width:100%;display:flex;align-items:center;gap:11px;
@@ -985,6 +992,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     z-index:300;
   }
   .sidebar-logo,.sidebar-divider{display:none;}
+  .sidebar-bucket{display:none;}   /* 가로 바 모드에선 숨김 */
   .sidebar-item{
     flex:1 1 0;width:auto;min-width:0;
     flex-direction:column;gap:2px;
@@ -1010,6 +1018,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     box-shadow:0 2px 14px rgba(0,0,0,0.10);
     overflow-x:hidden;overflow-y:hidden;justify-content:space-between;z-index:300;
   }
+  #left-sidebar .sidebar-bucket{display:none;}   /* 가로 바 모드에선 숨김 */
   #left-sidebar .sidebar-item{flex:1 1 0;width:auto;min-width:0;flex-direction:column;gap:2px;padding:4px 1px;justify-content:center;align-items:center;border-radius:8px;}
   #left-sidebar .sidebar-item-label{display:block !important;font-size:9px;line-height:1.1;white-space:normal;word-break:keep-all;text-align:center;}
   #left-sidebar .sidebar-item-icon{width:auto;font-size:18px;}
@@ -1462,6 +1471,14 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <span class="sidebar-item-icon">🎰</span>
     <span class="sidebar-item-label">선택 GOGO~~</span>
   </button>
+  <div class="widget sidebar-bucket">
+    <div class="widget-label">🪣 가족 버킷리스트</div>
+    <div class="bucket-list" id="bucket-list"></div>
+    <div class="bucket-input-row member-only">
+      <input type="text" class="bucket-input" id="bucket-input" placeholder="이루고 싶은 것..." maxlength="40"/>
+      <button class="bucket-submit" onclick="addBucket()">추가</button>
+    </div>
+  </div>
 </div>
 
 <!-- 메인 콘텐츠 -->
@@ -1479,14 +1496,6 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
     <div class="widget">
       <div class="widget-label">🎯 오늘의 미션 <span id="mission-date-badge" style="font-size:11px;font-weight:600;color:var(--muted);"></span></div>
       <div class="mission-grid" id="mission-grid"></div>
-    </div>
-    <div class="widget">
-      <div class="widget-label">🪣 가족 버킷리스트</div>
-      <div class="bucket-list" id="bucket-list"></div>
-      <div class="bucket-input-row member-only">
-        <input type="text" class="bucket-input" id="bucket-input" placeholder="이루고 싶은 것..." maxlength="40"/>
-        <button class="bucket-submit" onclick="addBucket()">추가</button>
-      </div>
     </div>
   </div>
 </div>
@@ -1802,7 +1811,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v39 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v41 · 2026-07-27</span>
 </footer>
 
 <script>
