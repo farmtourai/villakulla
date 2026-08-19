@@ -924,16 +924,17 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
 .dday-empty{font-size:11px;color:var(--muted);padding:6px 2px;}
 /* 우측 패널 카드 정제 */
 #dday-rail .dday-item{
-  background:#fff;border:1px solid var(--border);border-radius:12px;
-  padding:10px 11px;gap:9px;box-shadow:0 2px 8px rgba(0,0,0,0.03);
+  display:flex;align-items:center;gap:6px;flex-wrap:nowrap;
+  background:#fff;border:1px solid var(--border);border-radius:11px;
+  padding:7px 9px;box-shadow:0 2px 8px rgba(0,0,0,0.03);
   transition:transform 0.15s,box-shadow 0.15s;
 }
 #dday-rail .dday-item:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.07);}
-#dday-rail .dday-emoji{font-size:20px;}
-#dday-rail .dday-name{font-size:12px;font-weight:600;color:#2c2c2c;}
-#dday-rail .dday-date{font-size:10px;}
-#dday-rail .dday-num{font-size:14px;}
-#dday-rail .dday-list{gap:7px;}
+#dday-rail .dday-emoji{font-size:15px;flex-shrink:0;line-height:1;}
+#dday-rail .dday-name{font-size:12px;font-weight:600;color:#2c2c2c;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#dday-rail .dday-date{font-size:10.5px;color:var(--muted);flex-shrink:0;white-space:nowrap;}
+#dday-rail .dday-num{font-size:13px;flex-shrink:0;white-space:nowrap;}
+#dday-rail .dday-list{gap:6px;}
 
 @media(max-width:900px){
   #dday-rail{position:static;width:auto;top:auto;bottom:auto;height:auto;
@@ -1824,7 +1825,7 @@ footer{text-align:center;padding:14px 20px;color:var(--muted);font-size:11.5px;l
   <span class="footer-season" id="footer-season" style="display:inline;font-size:13px;">🌸</span>
   빌레쿨라하우스 · <span id="footer-slogan">함께라서 행복한 매일매일 💕</span>
   <span style="margin-left:8px;opacity:0.7;">© 2025 All rights reserved.</span>
-  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v47 · 2026-07-27</span>
+  <span style="margin-left:8px;opacity:0.55;font-size:11px;">v48 · 2026-07-27</span>
 </footer>
 
 <script>
@@ -1854,18 +1855,20 @@ function showPage(pageId) {
   syncSidebarHeight();
 }
 
-// ── 좌측 사이드바 세로 길이를 홈 사진 보드 밑선에 맞춤 (데스크톱, 홈 화면 한정) ──
+// ── 좌측 사이드바·우측 레일 세로 길이를 홈 사진 보드 밑선에 맞춤 (데스크톱, 홈 화면 한정) ──
 function syncSidebarHeight(){
-  const sb=document.getElementById('left-sidebar');
   const board=document.getElementById('home-photo-board');
-  if(!sb) return;
-  const horizontal = window.innerWidth<=640 ||
-    (window.matchMedia && window.matchMedia('(orientation:landscape) and (max-height:500px)').matches);
   const homeActive = document.getElementById('home-page') &&
     document.getElementById('home-page').classList.contains('active');
-  if(horizontal || !homeActive || !board){ sb.style.height=''; return; }  // 그 외엔 기본값
-  const h = Math.round(board.getBoundingClientRect().bottom - sb.getBoundingClientRect().top);
-  if(h>140) sb.style.height = h + 'px';
+  const landscapeBar = window.matchMedia && window.matchMedia('(orientation:landscape) and (max-height:500px)').matches;
+  const setH=(el, minW)=>{
+    if(!el) return;
+    if(!board || !homeActive || window.innerWidth<=minW || landscapeBar){ el.style.height=''; return; }
+    const h = Math.round(board.getBoundingClientRect().bottom - el.getBoundingClientRect().top);
+    if(h>140) el.style.height = h + 'px'; else el.style.height='';
+  };
+  setH(document.getElementById('left-sidebar'), 640);   // 좌측 사이드바는 ≤640에서 가로바
+  setH(document.getElementById('dday-rail'), 900);      // 우측 레일은 ≤900에서 정적 배치
 }
 window.addEventListener('resize', syncSidebarHeight);
 
@@ -2358,24 +2361,27 @@ function renderDdays(){
   const bdays = getBirthdayItems().sort(byUpcoming);
   const annis = getAnniversaryItems().sort(byUpcoming);
   const memos = getMemorialItems().sort(byUpcoming);
-  const rowHtml = item=>{
+  const rowHtml = (item, strip)=>{
     const isLunar = item.calType === 'lunar';
-    const dateLabel = item.date.slice(5).replace('-','/') + (isLunar ? ' <span class="lunar-badge">음력</span>' : '');
+    const dateLabel = item.date.slice(5).replace('-','/') + (isLunar ? ' <span class="lunar-badge">음</span>' : '');
+    let nm = item.name;
+    if(strip) nm = nm.replace(strip,'').trim();
     return `<div class="dday-item">
-      <div class="dday-emoji">${item.emoji}</div>
-      <div class="dday-info"><div class="dday-name">${item.name}</div><div class="dday-date">${dateLabel}</div></div>
-      <div class="dday-num">${calcDday(item)}</div>
+      <span class="dday-emoji">${item.emoji}</span>
+      <span class="dday-name">${nm}</span>
+      <span class="dday-date">${dateLabel}</span>
+      <span class="dday-num">${calcDday(item)}</span>
     </div>`;
   };
   const el=document.getElementById('dday-list');
   if(!el) return;
   el.innerHTML =
     '<div class="dday-group-label">🎂 가족 생일</div>' +
-    (bdays.length ? bdays.map(rowHtml).join('') : '<div class="dday-empty">가족 생일 정보가 없어요</div>') +
+    (bdays.length ? bdays.map(i=>rowHtml(i,/\s*생일\s*$/)).join('') : '<div class="dday-empty">가족 생일 정보가 없어요</div>') +
     '<div class="dday-group-label">🎉 기념일</div>' +
-    (annis.length ? annis.map(rowHtml).join('') : '<div class="dday-empty">관리자에서 기념일을 추가하세요</div>') +
+    (annis.length ? annis.map(i=>rowHtml(i,/\s*기념일\s*$/)).join('') : '<div class="dday-empty">관리자에서 기념일을 추가하세요</div>') +
     '<div class="dday-group-label">🕊️ 추모일</div>' +
-    (memos.length ? memos.map(rowHtml).join('') : '<div class="dday-empty">관리자에서 추모일을 추가하세요</div>');
+    (memos.length ? memos.map(i=>rowHtml(i,/\s*기일\s*$/)).join('') : '<div class="dday-empty">관리자에서 추모일을 추가하세요</div>');
 }
 // 정렬용: 다가오는 일수
 function ddayDiff(item){
